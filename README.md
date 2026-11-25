@@ -1,49 +1,55 @@
-# Inventarizācija — v0.2.1 (izstrādes kandidāts)
+# Inventarizācija — AssetAudit v0.2.3
 
-**Latviska, responsive PWA** uzņēmuma ikgadējai inventarizācijai. Izvēlētā arhitektūra: **privāts personīgais GitHub repozitorijs + Netlify + Supabase PostgreSQL/Auth**.
+Latviska, funkcionāla PWA. **Šis ir testa kandidāts, nevis ekspluatācijai apstiprināta uzskaites sistēma.**
 
-Šī ir **darbojoša lokāla vēsturisko datu apskates versija** un **tiešsaistes rakstīšanas arhitektūras sākotnējā realizācija**. Tā NAV sertificēta vai atļauta produkcijas uzskaites versija: Supabase migrācija, RLS ar diviem reāliem lietotājiem, datu atjaunošana un grāmatvedības noteikumi vēl jāpārbauda testvidē. **Neizmantojiet izstrādes kandidātu kā vienīgo grāmatvedības uzskaites sistēmu.**
+## Sadaļas
 
-## Faili, kurus lejupielādēt
+| Sadaļa | Lietotājs | Administrators | Datu avots |
+|---|---|---|---|
+| Datu ievade | Jā | Jā | Katalogs, jaunās ievades forma |
+| Preču saraksts | Jā | Jā | Grupēti, jau inventarizācijā ievadītie dati |
+| Katalogs | Jā | Jā, ar labošanu | Kataloga varianti un to vēsture |
+| Statistika | Nē | Jā | Serverī autorizēti finanšu kopsavilkumi |
+| Administrācija | Nē | Jā | Gads, e-pasta konti, tiesības |
 
-1. `inventarizacija_app_v0.2.1.zip` — **tikai kods un dokumentācija**, drīkst likt **privātajā GitHub** (pēc pārbaudes).
-2. `inventarizacija_privatie_dati_v0.2.1.zip` — **konfidenciālie īstie vēsturiskie dati**. **Nekad** neievietot GitHub, Netlify publicējamajā mapē vai publiskā URL. Saglabāt šifrētā uzņēmuma krātuvē.
-3. `Gramatvedibas_un_kataloga_noteikumu_audits_v0.2.1.docx` — atsevišķi rediģējams grāmatvedības noteikumu apstiprināšanas dokuments.
+Datu ievades meklēšana izmanto **katalogu**, nevis jau ievadīto inventarizāciju. Produkta izvēle aizpilda kodu, nosaukumu, cenas un svītrkodu. Kase, mērvienība, daudzums un komentārs paliek rediģējami. Daudzumu maina ar `+`, `−` vai tieši ievadot skaitli. Svītrkoda nolasīšana izmanto **precīzu** svītrkoda atbilstību; neatrasts kods aizpilda tikai svītrkoda lauku. Pašlaik kamera izmanto pārlūka `BarcodeDetector`, ja atbalstīts; citādi kods jāievada manuāli.
 
-## Tūlītēja vēsturiskās datubāzes apskate uz datora
+## Arhitektūra
 
-Priekšnosacījumi: instalēts **Node.js 22+** vai **Python 3**. Nav nepieciešams Supabase konts.
+- **GitHub**: personīgā konta **privāts** repozitorijs, pirmkods, migrācijas un izstrādes vēsture.
+- **Netlify**: statiskā PWA un servera administrēšanas funkcija; `node scripts/build_site.mjs`, publicēt `dist/`.
+- **Supabase**: PostgreSQL, Supabase Auth (**e-pasts + parole**), `staff`/`admin` profili, RLS, nemaināmu notikumu tabulas, kontrolēti RPC.
+- Kontus veido **administrators**, publiska reģistrēšanās ir izslēgta. E-pasta apstiprināšana kontiem, kurus administrators izveido ar Auth Admin API, tiek veikta serverī. **Supabase `service_role`/`sb_secret` atslēgu nekad nepublicēt pārlūkā.**
 
-1. Atarhivēt lietotnes pirmkodu datora mapē.
-2. Atarhivēt konfidenciālo datu arhīvu **citā, drošā mapē**.
-3. Terminalī lietotnes mapē izpildīt `npm run build`, tad `cd dist` un `python -m http.server 8765` (Windows ar `py -m http.server 8765`). Alternatīvi: servēt mapi `site`, jo neiestatīts publiskais `config.js` darbojas tikai lasīšanai.
-4. Pārlūkā atvērt `http://localhost:8765`.
-5. Spiest **Atvērt vēsturiskā eksporta JSON**, izvēlēties **`legacy_snapshot.json`** no privātās mapes.
-6. Izmantot **Datu ievade**, **Katalogs**, **Statistika**, **Administrācija**. Šajā lokālajā režīmā visas darbības ir **tikai lasāmas**; neviena datubāze netiek rakstīta vai atjaunota.
+## Lokāls priekšskatījums (tikai lasāms)
 
-**Piezīme:** faila izvēle neievieto privātos datus Netlify būvē vai GitHub; pārlūks tos apstrādā lokāli. Neatveriet failu svešā, nepārbaudītā vietnē un neveidojiet publiski pieejamu ZIP no konfidenciālajiem datiem.
+1. Instalēt Node.js 22+ un/vai Python 3.
+2. Šajā mapē `npm run build`, pēc tam `cd dist` un `python -m http.server 8765` (Windows `py -m http.server 8765`). Var izmantot arī `start_preview_windows.bat`.
+3. Atvērt `http://localhost:8765` un izvēlēties **vēsturiskā eksporta JSON** no **atsevišķi** glabātās, konfidenciālās datu pakotnes (`legacy_snapshot.json`).
+4. Šis režīms ir tikai lasāms, un failu nedrīkst iepakot PWA izvietošanai.
 
-## Galvenās sadaļas
+Sākotnējā MySQL eksporta kontroles: **67 819** inventarizācijas ieraksti 2018–2025 un **5 980** katalogā. Divas aritmētikas neatbilstības un sešas jauktas mērvienību grupas nav labotas. Skatīt `docs/ACCOUNTING_COMPARISON.md` (konfidenciāls — nav jāpublicē GitHub) un `docs/catalogue_accounting_rules.md` (audita projekts).
 
-- **Datu ievade**: vecajam ieradumam tuva darbvirsmas tabula, meklēšana, grupēšana, individuālās rindas; ierīcēm pielāgota mobilā saskarne.
-- **Katalogs**: preču un cenu variantu meklēšana; admin papildus labo, pievieno un loģiski paslēpj variantu.
-- **Statistika** (admin): PZ, PL, atšķirība, datuma/laika skats (pilna vēsturiskā izsekojamība tikai jaunajām darbībām pēc importa).
-- **Administrācija** (admin): gads, izveidot/atslēgt lietotāju; pavadzīmju automātiska importa funkcija **vēl nav ieslēgta**, līdz grāmatvedis apstiprinās algoritmu.
+## Esošas Supabase TEST datubāzes atjaunināšana
 
-## Salīdzināšana ar sākotnējo MySQL eksportu
+Lietotājs jau piemērojis migrācijas **001, 002 un 003**; `tests/security_checks.sql` izpildīts sekmīgi (`Success. No rows returned`). **NEATKĀRTOT šīs migrācijas.**
 
-Arhīvs satur **67 819** inventarizācijas ierakstus (2018–2025) un **5 980** kataloga rindas. Exact Decimal kontroles: `python3 tests/verify_historical.py`. Visu gadu summas, skaits un grupas sakrīt. Divas aritmētiskās neatbilstības un sešas jauktas mērvienību grupas **netiek klusi labotas**. Skatīt `docs/ACCOUNTING_COMPARISON.md`.
+Jaunā v0.2.3 migrācija ir **tikai** `supabase/migrations/202611250004_email_auth.sql`. Izpildīt vienreiz tajā pašā testa projektā **pēc koda pārbaudes un pirms kontu veidošanas**, nevis darba datubāzē. Tur saglabājas iepriekšējā `username` kolonna kā vēsturisks elements, bet tiek pārtraukta vecā lietotājvārdu reģistrācijas funkcijas publiskā izmantošana.
 
-## Izvietošana tiešsaistē
+Ieviešanas secība un atslēgu norādījumi: `docs/EMAIL_AUTH_AND_DEPLOY_V023.md`. Sadaļu UX un skenēšanas nosacījumi: `docs/UI_FLOW_V023.md`. Drošības/finanšu testu reģistrs: `docs/V023_TEST_MATRIX.md`.
 
-Skatīt `docs/INSTALL_AND_DEPLOY.md` un `docs/SECURITY_AND_PRODUCTION_GATE.md`. Netlify `Build command`: `node scripts/build_site.mjs`; `Publish directory`: `dist`. Pārlūka konfigurācijā drīkst būt **tikai Supabase public/anon atslēga**, nevis `service_role`. Sākotnējā MySQL arhīva paroles netiek pārnestas.
+## Testi
 
-## Kur turpināt darbu nākamam aģentam
+```bash
+npm run test:security
+npm run test:static
+npm run test:math
+npm run build
+python3 tests/e2e_smoke.py
+```
 
-Pirmais fails: [`AGENTS.md`](AGENTS.md). Tad `docs/IMPLEMENTATION_STATUS.md`, `docs/REQUIREMENT_TRACE_2026-11-25.md`, `docs/catalogue_accounting_rules.md` un `docs/project-history/`.
+`npm run test:history` izmanto **privāti pieejamos kontrolsummu failus** ārpus publicējamiem datiem. Nav pabeigti: **reāla 004 migrācija, 2 lietotāju RLS, Supabase Auth/Netlify noslēpumu saderības tests, pilns datubāzes backup+restore, Android kameras tests un grāmatveža audits**. Līdz tam produkcijai **NO-GO**.
 
-Versijas kods `v0.2.1` nozīmē pirmo kandidātu, nevis produkcijas izlaidumu.
+## Nākamajam aģentam
 
-## Lietotājvārdi bez e-pastiem
-
-V0.2.1 darbiniekiem izmanto tikai lietotājvārdu un paroli. Admin lietotājus veido tieši, bez ielūgumu e-pastiem. Supabase Auth iekšēji joprojām izmanto tehnisku aliasu — to nedrīkst uzskatīt par īstu darbinieka e-pasta adresi. Skatīt `docs/GITHUB_SUPABASE_USERNAME_SETUP.md`. Produkcijas testi vēl NAV veikti.
+`AGENTS.md` → `docs/IMPLEMENTATION_STATUS.md` → `docs/REQUIREMENT_TRACE_2026-11-25.md` → `docs/project-history/` → `docs/catalogue_accounting_rules.md`. Nekādus reālos inventarizācijas datus, SQL kopijas, QA ekrānattēlus vai paroles neievietot repozitorijā vai Netlify `dist/`.

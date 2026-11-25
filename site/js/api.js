@@ -1,36 +1,32 @@
 /** Minimal no-dependency Supabase Auth and PostgREST client.
  *  The browser contains ONLY the publishable ANON key; service role is NEVER here.
  */
-// Supabase Auth still expects an email/phone identifier internally. Staff never
-// provide an address: we use an undeliverable, RFC 2606 reserved internal alias.
-// MUST be validated against a live Supabase test project before production use.
-export const USERNAME_RE = /^[a-z][a-z0-9._-]{2,31}$/;
-export function identityForUsername(value){
-  const username=String(value||'').trim().toLowerCase();
-  if(!USERNAME_RE.test(username)||username.includes('..')||username.endsWith('.'))throw new Error('Lietotājvārdam jābūt 3–32 latīņu burtiem/cipariem; atļauti arī . _ -');
-  return username+'@accounts.inventory.invalid';
-}
 export class SupabaseAPI {
   constructor({supabaseUrl,supabaseAnonKey}){
     this.url=(supabaseUrl||'').replace(/\/$/,'');this.key=supabaseAnonKey||'';
     this.session=null;
     try{const s=sessionStorage.getItem('inv_session');if(s)this.session=JSON.parse(s);}catch{}
   }
-  get configured(){return this.url.startsWith('https://')&&this.key.length>15&&!this.key.startsWith('sb_publishable_');}
+  get configured(){return this.url.startsWith('https://')&&this.key.length>15&&!this.key.startsWith('sb_secret_');}
   store(){try{if(this.session)sessionStorage.setItem('inv_session',JSON.stringify(this.session));else sessionStorage.removeItem('inv_session');}catch{}}
   async request(path,{method='GET',body,auth=true,headers={}}={}){
     if(!this.configured)throw new Error('Supabase vēl nav konfigurēts');
     if(auth)await this.refreshIfNeeded();
-    const res=await fetch(this.url+path,{method,cache:'no-store',headers:{'apikey':this.key,'Authorization':`Bearer ${auth?(this.session?.access_token||this.key):this.key}`,'Content-Type':'application/json',...headers},body:body===undefined?undefined:JSON.stringify(body)});
+    const token=auth?this.session?.access_token:null;
+    if(auth&&!token)throw new Error('Jāpieslēdzas no jauna');
+    const h={'apikey':this.key,'Content-Type':'application/json',...headers};
+    if(token)h.Authorization=`Bearer ${token}`;
+    const res=await fetch(this.url+path,{method,cache:'no-store',headers:h,body:body===undefined?undefined:JSON.stringify(body)});
     const raw=await res.text();let data;try{data=raw?JSON.parse(raw):null;}catch{data=raw;}
     if(!res.ok)throw new Error(data?.message||data?.error_description||data?.error||data?.hint||`Servera kļūda (${res.status})`);
     return data;
   }
-  async login(username,password){
-    const email=identityForUsername(username);
+  async login(email,password){
+    email=String(email||'').trim().toLowerCase();
+    if(!email.includes('@')||email.length>254)throw new Error('Ievadiet korektu e-pasta adresi');
     let s;
     try{s=await this.request('/auth/v1/token?grant_type=password',{method:'POST',auth:false,body:{email,password}});}
-    catch{throw new Error('Nepareizs lietotājvārds vai parole');}
+    catch{throw new Error('Nepareizs e-pasts vai parole');}
     this.session={...s,expires_at:Math.floor(Date.now()/1000)+Number(s.expires_in||3600)};this.store();
     return this.me();
   }
@@ -52,6 +48,7 @@ export class SupabaseAPI {
   async inventoryList({year,search='',cash='',limit=60,offset=0}){return this.rpc('inventory_list',{p_year:year,p_search:search,p_cash:cash,p_limit:limit,p_offset:offset});}
   async inventoryDetails(group,year){return this.rpc('inventory_details',{p_year:year,p_code:group.code,p_name:group.name,p_invoice_price:group.invoice_price,p_shelf_price:group.shelf_price,p_cash:group.cash});}
   async catalogueSearch(search='',offset=0,limit=80){return this.rpc('catalogue_search',{p_search:search,p_offset:offset,p_limit:limit});}
+  async catalogueByBarcode(barcode){return this.rpc('catalogue_by_barcode',{p_barcode:barcode});}
   async inventorySubmit(payload){return this.rpc('inventory_submit',payload);}
   async catalogueChange(payload){return this.rpc('catalogue_change',payload);}
   async adminStats(year,asof=null){const r=await this.rpc('admin_stats',{p_year:year,p_asof:asof});return r[0];}

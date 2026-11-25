@@ -1,10 +1,6 @@
-/**
- * Trusted administrator-only account creation/management.
- * Accounts use a synthetic, nondeliverable email alias ONLY inside Supabase Auth;
- * people sign in with username + password. No invitations or email confirmation.
- * The reserved .invalid suffix MUST pass live Supabase validation before deployment.
- * The secret key stays in the Netlify Functions runtime and never in the browser.
- */
+/** Administrator-only user management using email/password Supabase Auth.
+ * Secret key stays in Netlify Functions; caller's Supabase user JWT is verified.
+ * Live two-user tests and API-key compatibility are a production blocker. */
 const json=(value,status=200)=>new Response(JSON.stringify(value),{status,headers:{
   'Content-Type':'application/json; charset=utf-8',
   'Cache-Control':'no-store',
@@ -12,27 +8,21 @@ const json=(value,status=200)=>new Response(JSON.stringify(value),{status,header
   'Referrer-Policy':'no-referrer'
 }});
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const USERNAME=/^[a-z][a-z0-9._-]{2,31}$/;
-const LOGIN_ALIAS_DOMAIN='accounts.inventory.invalid';
-const normalizeUsername = (value) => String(value||'').trim().toLowerCase();
-const validUsername = (name) => USERNAME.test(name)&&!name.includes('..')&&!name.endsWith('.');
-const alias = name => `${name}@${LOGIN_ALIAS_DOMAIN}`;
+const normalizeEmail=(value)=>String(value||'').trim().toLowerCase();
+const validEmail=value=>typeof value==='string'&&value.length<=254&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 const validPassword = p => typeof p==='string' && p.length>=12 && p.length<=128;
 
 export default async function handler(request){
   const base=(process.env.SUPABASE_URL||'').replace(/\/$/,'');
-  const secret=process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const anon=process.env.SUPABASE_ANON_KEY;
-  // Current code uses legacy JWT-form service/anon keys. New sb_secret/publishable
-  // keys need a separately verified adapter; fail closed rather than guessing.
+  const secret=process.env.SUPABASE_SECRET_KEY||process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const anon=process.env.SUPABASE_PUBLISHABLE_KEY||process.env.SUPABASE_ANON_KEY;
   if(!/^https:\/\/[a-zA-Z0-9-]+\.supabase\.co$/.test(base)||!secret||!anon)
     return json({error:'Servera konfigurācija nav pabeigta'},503);
-  if(secret.startsWith('sb_secret_') || anon.startsWith('sb_publishable_'))
-    return json({error:'Jaunā Supabase API atslēgu modeļa saderība vēl nav pārbaudīta'},503);
   if(!['GET','POST','PATCH'].includes(request.method))return json({error:'Metode nav atļauta'},405);
   const bearer=(request.headers.get('authorization')||'').match(/^Bearer ([A-Za-z0-9._\-]+)$/);
   if(!bearer)return json({error:'Nepieciešama autorizācija'},401);
-  const serviceHeaders={'apikey':secret,'Authorization':`Bearer ${secret}`,'Content-Type':'application/json'};
+  // New sb_secret keys are NOT JWTs. Send on apikey only. Legacy JWT requires Bearer.
+  const serviceHeaders={'apikey':secret,'Content-Type':'application/json',...(secret.startsWith('sb_secret_')?{}:{'Authorization':`Bearer ${secret}`})};
   const service=async(path,opts={})=>{
     const r=await fetch(base+path,{...opts,headers:{...serviceHeaders,...(opts.headers||{})},cache:'no-store'});
     let d;try{d=await r.json();}catch{d={error:'Nederīga servera atbilde'}}
@@ -54,7 +44,7 @@ export default async function handler(request){
     if(roles[0]?.role!=='admin'||roles[0]?.active!==true)return json({error:'Tikai administratoram'},403);
 
     if(request.method==='GET'){
-      const profiles=await service('/rest/v1/user_profiles?select=id,username,display_name,role,active&order=created_at.asc&limit=200');
+      const profiles=await service('/rest/v1/user_profiles?select=id,email_address,display_name,role,active&order=created_at.asc&limit=200');
       return json({users:profiles});
     }
     const size=Number(request.headers.get('content-length')||0);
@@ -64,19 +54,19 @@ export default async function handler(request){
     if(!payload||typeof payload!=='object')return json({error:'Nepareizi dati'},400);
 
     if(request.method==='POST'){
-      const username=normalizeUsername(payload.username),name=String(payload.display_name||'').trim();
-      if(!validUsername(username)||!validPassword(payload.password)||name.length>120||!['staff','admin'].includes(payload.role))
-        return json({error:'Pārbaudiet lietotājvārdu (3–32), paroli (12–128) un lomu'},400);
-      // The Auth unique email constraint prevents two accounts with the same alias.
+      const email=normalizeEmail(payload.email),name=String(payload.display_name||'').trim();
+      if(!validEmail(email)||!validPassword(payload.password)||!name||name.length>120||!['staff','admin'].includes(payload.role))
+        return json({error:'Pārbaudiet e-pastu, vārdu, paroli (12–128) un lomu'},400);
+      // Supabase Auth enforces unique emails. Public signup must remain disabled.
       const created=await service('/auth/v1/admin/users',{method:'POST',body:JSON.stringify({
-        email:alias(username),password:payload.password,email_confirm:true,
+        email,password:payload.password,email_confirm:true,
         app_metadata:{account_type:'inventory_internal'}
       })});
       const id=created.id||created.user?.id;
       if(!UUID.test(id||''))return json({error:'Auth lietotājs izveidots, bet ID nav iegūstams; pārbaudiet Supabase'},500);
       try{
         // The RPC checks the caller's real admin JWT and writes an immutable audit event.
-        await asUser(bearer[1],'/rest/v1/rpc/admin_register_profile',{p_id:id,p_username:username,p_name:name,p_role:payload.role});
+        await asUser(bearer[1],'/rest/v1/rpc/admin_register_email_profile',{p_id:id,p_email:email,p_name:name,p_role:payload.role});
       }catch(e){
         // Avoid leaving an untracked, usable Auth account after failed profile creation.
         // If cleanup itself fails, make the partial failure conspicuous to the operator.
@@ -109,7 +99,7 @@ export default async function handler(request){
   }catch(e){
     // Do not send internal trace or raw payload to browser.
     const status=e?.http===409||e?.http===422?409:e?.http===400?400:500;
-    if(status===409)return json({error:'Lietotājvārds jau aizņemts vai kontu nevar izveidot'},409);
+    if(status===409)return json({error:'E-pasts jau izmantots vai kontu nevar izveidot'},409);
     return json({error:status===400?'Nepareizi dati':'Darbība neizdevās; pārbaudiet Supabase administrācijas žurnālu'},status);
   }
 }

@@ -803,6 +803,126 @@
         "TC-064"
       ],
       "note": "No approval of Netlify Blobs as only backup or confirmation of backup schedule; Beta and Netlify usage risks unresolved."
+    },
+    {
+      "id": "REQ-068",
+      "title": "Use Supabase Auth email+password accounts created only by administrator",
+      "description": "REQ-065 superseded; no signup or employee email invitations; retain RLS",
+      "priority": "MUST",
+      "status": "IMPLEMENTED_LOCALLY_LIVE_VERIFICATION_PENDING",
+      "sources": [
+        "SRC-CHAT-EMAIL-AUTH-V023"
+      ],
+      "acceptance_test_ids": [
+        "TC-072",
+        "TC-077",
+        "TC-078"
+      ],
+      "note": "2026-11-25; docs/REQUIREMENT_TRACE_2026-11-25.md; prior superseded user decisions retained"
+    },
+    {
+      "id": "REQ-069",
+      "title": "Keep mandatory RLS and two user roles",
+      "description": "Small team is no excuse to disable server-side role isolation",
+      "priority": "MUST",
+      "status": "IMPLEMENTED_LOCALLY_LIVE_VERIFICATION_PENDING",
+      "sources": [
+        "SRC-CHAT-RLS-APPROVAL-V023"
+      ],
+      "acceptance_test_ids": [
+        "TC-073",
+        "TC-077"
+      ],
+      "note": "2026-11-25; docs/REQUIREMENT_TRACE_2026-11-25.md; prior superseded user decisions retained"
+    },
+    {
+      "id": "REQ-070",
+      "title": "Minimal data-first Latvian user interface",
+      "description": "No marketing or overlong hints; preserve fast desktop workflow and responsive layout",
+      "priority": "MUST",
+      "status": "IMPLEMENTED_LOCALLY_LIVE_VERIFICATION_PENDING",
+      "sources": [
+        "SRC-CHAT-UI-V023"
+      ],
+      "acceptance_test_ids": [
+        "TC-066"
+      ],
+      "note": "2026-11-25; docs/REQUIREMENT_TRACE_2026-11-25.md; prior superseded user decisions retained"
+    },
+    {
+      "id": "REQ-071",
+      "title": "Five navigation sections split by role",
+      "description": "Datu ievade; Preču saraksts; Katalogs; Statistika; Administrācija; staff first 3, admin all 5",
+      "priority": "MUST",
+      "status": "IMPLEMENTED_LOCALLY_LIVE_VERIFICATION_PENDING",
+      "sources": [
+        "SRC-CHAT-UI-V023"
+      ],
+      "acceptance_test_ids": [
+        "TC-066",
+        "TC-067"
+      ],
+      "note": "2026-11-25; docs/REQUIREMENT_TRACE_2026-11-25.md; prior superseded user decisions retained"
+    },
+    {
+      "id": "REQ-072",
+      "title": "Entry search is catalogue search; inventory list separate",
+      "description": "Click catalogue variant to fill new entry fields, not inventory rows",
+      "priority": "MUST",
+      "status": "IMPLEMENTED_LOCALLY_LIVE_VERIFICATION_PENDING",
+      "sources": [
+        "SRC-CHAT-UI-V023"
+      ],
+      "acceptance_test_ids": [
+        "TC-068"
+      ],
+      "note": "2026-11-25; docs/REQUIREMENT_TRACE_2026-11-25.md; prior superseded user decisions retained"
+    },
+    {
+      "id": "REQ-073",
+      "title": "Large camera scan with exact barcode lookup",
+      "description": "Known item autopopulates; unknown barcode populates barcode only; multiple matches choose variant",
+      "priority": "MUST",
+      "status": "IMPLEMENTED_LOCALLY_LIVE_VERIFICATION_PENDING",
+      "sources": [
+        "SRC-CHAT-UI-V023"
+      ],
+      "acceptance_test_ids": [
+        "TC-069",
+        "TC-081"
+      ],
+      "note": "2026-11-25; docs/REQUIREMENT_TRACE_2026-11-25.md; prior superseded user decisions retained"
+    },
+    {
+      "id": "REQ-074",
+      "title": "Original entry fields with + / - and manual quantity",
+      "description": "Code optional; name, barcode, both prices, cash, quantity, unit, note; retain old unit/cash options",
+      "priority": "MUST",
+      "status": "IMPLEMENTED_LOCALLY_LIVE_VERIFICATION_PENDING",
+      "sources": [
+        "SRC-CHAT-UI-V023"
+      ],
+      "acceptance_test_ids": [
+        "TC-070",
+        "TC-071"
+      ],
+      "note": "2026-11-25; docs/REQUIREMENT_TRACE_2026-11-25.md; prior superseded user decisions retained"
+    },
+    {
+      "id": "REQ-075",
+      "title": "Keep precise accounting and legacy warning rules",
+      "description": "Zero price warns not blocks; year mismatch warns not blocks; old financial and catalogue rules not silently modified",
+      "priority": "MUST",
+      "status": "IMPLEMENTED_LOCALLY_LIVE_VERIFICATION_PENDING",
+      "sources": [
+        "SRC-CHAT-UI-V023"
+      ],
+      "acceptance_test_ids": [
+        "TC-074",
+        "TC-075",
+        "TC-080"
+      ],
+      "note": "2026-11-25; docs/REQUIREMENT_TRACE_2026-11-25.md; prior superseded user decisions retained"
     }
   ]
 }

@@ -149,6 +149,20 @@
       "REQ-051",
       "REQ-052",
       "REQ-054"
+    ],
+    "SRC-CHAT-EMAIL-AUTH-V023": [
+      "REQ-068"
+    ],
+    "SRC-CHAT-RLS-APPROVAL-V023": [
+      "REQ-069"
+    ],
+    "SRC-CHAT-UI-V023": [
+      "REQ-070",
+      "REQ-071",
+      "REQ-072",
+      "REQ-073",
+      "REQ-074",
+      "REQ-075"
     ]
   }
 }

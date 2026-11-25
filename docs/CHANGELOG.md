@@ -26,3 +26,22 @@
 
 ### Neieviests
 - Gada katalogu ģenerējošs pavadzīmju imports; automātiskie backup; pilnvērtīgs cross-browser svītrkodu OCR/ZXing; produkcijas izvietošana.
+
+
+## v0.2.2 — 2026-11-25 — Supabase table privilege hardening
+- BUG-SEC-001: explicit revoke of all grants to PUBLIC/anon/authenticated on private application tables; regrant only profile/config SELECT to authenticated. No data alteration.
+- Full pinpointed grant test, read-only diagnosis, RLS flags and 7 immutable triggers check.
+- Live Supabase execution/2-user tests NOT verified. Accounting data and calculations unchanged.
+
+
+## v0.2.3 — 2026-11-25 — Piecas sadaļas, kataloga ievades plūsma un e-pasta Auth
+
+- Minimāls datu-first UI; darbiniekiem 3 sadaļas, administratoram visas 5.
+- Datu ievades meklētājs izmanto katalogu, ne ievadītās inventarizācijas grupas; Preču saraksts atsevišķi.
+- Datu ievades forma no oriģinālās PHP: kods, nosaukums, PZ/PL cena, kase, daudzums, mērvienība, komentārs; papildus svītrkods. Daudzuma +/− un manuāla ievade.
+- Svītrkoda precīza meklēšana ar 0/1/vairāku variantu uzvedību. `BarcodeDetector` ja pieejams, citādi manuāls kods.
+- Supabase Auth: lietotāja e-pasts un parole, administrēta profila izveide, servera parole reset. `.invalid` alias lietotājvārdu sistēma aizstāta.
+- 004 SQL migrācija pievieno e-pasta profilu/reģistrācijas RPC un precīzu svītrkoda lookup; nekādas vēsturisku datu maiņas.
+- Client supports `sb_publishable_` and server `sb_secret_` keys (real provider compatibility NOT tested).
+- Izmaiņu izcelsme: REQ-068..075, TC-066..081. Grāmatvedības algoritms nav mainīts.
+- Lokāli tests pass; produkcijai NO-GO.

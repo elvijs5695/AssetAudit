@@ -1,14 +1,9 @@
-# Inventarizācija v0.2.1 — uzstādīšana (username/password)
+# Instalēšana un izvietošana — v0.2.3
 
-1. Sākotnēji pārbaudīt lokālo read-only priekšskatījumu bez Supabase; vēsturisko datu ZIP turēt atsevišķi.
-2. Personīgajā GitHub kontā izveidot privātu repozitoriju, ievietot tikai `inventarizacija_app_v0.2.1.zip` saturu, bez konfidenciāliem datiem.
-3. Supabase izveidot TUKŠU testa projektu (Free). Izpildīt autentifikācijas un GitHub integrācijas soļus no `docs/GITHUB_SUPABASE_USERNAME_SETUP.md`.
-4. Supabase GitHub integrācija: `Working directory = .`; `Deploy to production = OFF`, kamēr migrācijas nav pārbaudītas.
-5. `supabase/migrations/202611250001_base.sql` un `202611250002_username_accounts.sql` piemērot tieši vienā kontrolētā ceļā — NEKAD gan ar SQL Editor, gan automātisku GitHub deploy.
-6. Admina sākotnējais konts caur Auth admin (nevis ielūgumu), pēc tam profils ar SQL; username `admin` un nejauša parole.
-7. Netlify Free: importēt privāto personīgo GitHub repo, Build `node scripts/build_site.mjs`, Publish `dist`, Functions `netlify/functions`.
-8. Netlify konfigurācijā tikai publiskais URL/API key publiskajam build un JWT-form legacy service role tikai Functions; ja atslēgu režīms neatbilst, pārtraukt, nevis uzminēt pielāgojumu.
-9. Pārbaudīt reālu 2 lietotāju login, admin izveidi, paroles maiņu, atslēgšanu, nošķirtas tiesības, RLS, migrācijas, aritmētiku un restore.
-10. TIKAI pēc testu iziešanas plānot privāto 2018–2025 RAW datu migrāciju. `legacy_import.sql` neiekļaut GitHub/Netlify.
-
-Līdz tam tiešsaistes aplikācijas lietošana uzņēmuma inventarizācijai ir BLOĶĒTA.
+1. **GitHub**: izmantot esošo personīgo **privāto** `AssetAudit` repozitoriju. Komitēt tikai pirmkodu un drošo dokumentāciju; **nekomitēt** `legacy_snapshot.json`, `legacy_import.sql`, `private-data`, ekrānattēlus ar precēm un cenām, vai jebkādas paroles/atslēgas. Nekopēt `dist/config.js` ar nejauši ievietotu `service_role`/`sb_secret`.
+2. **Netlify**: esošā `Live` PWA. Build `node scripts/build_site.mjs`, publish `dist`, Functions `netlify/functions`. Netlify jaunais deploy pēc GitHub commit jānovēro; `Live` nav DB drošības testa apliecinājums.
+3. **Supabase**: tajā pašā TEST projektā 001,002,003 migrācijas jau izpildītas un drošības pārbaude sekmīga. **Tikai jaunā 004 migrācija** — `supabase/migrations/202611250004_email_auth.sql`, vienreiz. SQL Editor neieraksta automātisku CLI migrāciju vēsturi; neaktivizēt automātiskās GitHub production migrācijas bez tās saskaņošanas.
+4. **Auth**: e-pasts un parole, kontus veido administrators. Public signup OFF. Veidot pirmo admin Auth lietotāju manuāli; profila piešķiršana tikai uzticamā SQL Editor vidē. `docs/EMAIL_AUTH_AND_DEPLOY_V023.md`.
+5. **Netlify env**: `SUPABASE_URL` (**Builds + Functions**, testprojektam); `SUPABASE_PUBLISHABLE_KEY` (vai legacy `SUPABASE_ANON_KEY`) **Builds + Functions**; `SUPABASE_SECRET_KEY` (vai legacy `SUPABASE_SERVICE_ROLE_KEY`) **tikai Functions**. Nevienu slepeno atslēgu neveidot par Build vai publiski pieejamu vides mainīgo. Nav nepieciešami e-pasta OAuth/GitHub OAuth providers.
+6. **Pārbaudes**: reāls `staff` un `admin` login, pozitīvie/negatīvie RLS, `catalogue_by_barcode`, tiesības, konta atslēgšana, append-only, idempotence, kontu administrācija, 0 cenas brīdinājums, gada brīdinājums. Backup+restore. Tad vēsturiskā datu importa salīdzināšana — tikai apstiprinātā scenārijā.
+7. **Produkcijai NO-GO**, līdz 6. posms un grāmatvedības noteikumu audits ir izpildīts.

@@ -39,6 +39,7 @@ export class LegacyPreview {
     const s=search.trim().toLocaleLowerCase('lv');let items=this.data.catalogue_rows.filter(r=>!s||r[1].toLocaleLowerCase('lv').includes(s)||r[2].toLocaleLowerCase('lv').includes(s));
     return items.slice(offset,offset+limit).map(r=>({item_id:'legacy-'+r[0],revision:1,code:r[1],name:r[2],invoice_price:r[3],shelf_price:Number(r[5])===Number(this.data.configured_year)&&dec2(r[4])===0n?null:r[4],barcode:null,source_year:Number(r[5]),source:'legacy_catalogue',legacy_id:Number(r[0])}));
   }
+  async catalogueByBarcode(barcode){return (await this.catalogueSearch(barcode,0,100)).filter(row=>row.barcode===barcode);}
   async adminStats(year){
     const groups=this._groups(Number(year));let qty=0n,pz=0n,pl=0n,entry_count=0;
     for(const g of groups){qty+=g.quantity_cents;pz+=g.invoice_cents;pl+=g.shelf_cents;entry_count+=g.entry_count;}

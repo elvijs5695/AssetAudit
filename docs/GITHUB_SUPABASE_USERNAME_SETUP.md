@@ -1,3 +1,5 @@
+> **NOVECojis v0.2.1 norādījumu arhīvs.** Lietotājs ir mainījis autentifikācijas lēmumu: v0.2.3 izmanto Supabase Auth **e-pastu/paroli**. Šo dokumentu neizmantot jaunu kontu veidošanai. Aktuālā instrukcija: [`EMAIL_AUTH_AND_DEPLOY_V023.md`](EMAIL_AUTH_AND_DEPLOY_V023.md). Paturēts tikai lēmumu vēstures izsekojamībai.
+
 # Supabase + GitHub savienojums un lietotājvārdi — v0.2.1
 
 ## Lēmums

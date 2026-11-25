@@ -41,3 +41,21 @@
 ## v0.2.1 — username/password
 
 Pievienota lietotājvārda/paroles saskarne, admin konta izveide (nevis e-pasta ielūgums), paroles maiņa un lietotājvārdu unikālā atslēga SQL. Nav vēl īsta Supabase integrācijas testa, `.invalid` domēna pārbaudes, abu kontu drošības testa, Netlify izvietošanas vai backup restore. Produkcijai NO-GO.
+
+
+## v0.2.2 — Supabase drošības kļūdas novēršanas kandidāts
+- Lietotāja testa kļūda: `P0001: Security defect: forbidden direct table privilege`; izcelsme: tests apvienoja 5 noteikumus bez detalizācijas.
+- Koda auditā atrasta trūkstoša `anon` SELECT un papildu privilēģiju noņemšana `user_profiles` / `app_config` tabulās. Paredzēts tranzakcionāls un datu rindas nemainošs drošības labojums.
+- **Nav apstiprināts**, ka šī ir vienīgā atteices vieta — jāpalaiž read-only tests un jaunā drošības migrācija reālā testa Supabase projektā.
+- Novēršana nav pierādījums visu RLS politiku drošībai; divu lietotāju/anon HTTP tests joprojām NO-GO produkcijai.
+
+
+## v0.2.3 — 2026-11-25, šī brīža stāvoklis (prioritārs par iepriekšējo apakšnodaļu novecojušiem faktiem)
+
+**Izveidots un lokāli pārbaudīts:** piecu sadaļu PWA latviešu valodā; datu ievades meklēšana **katalogā**, klikšķis aizpilda ievades preces laukus; atsevišķs jau ievadīto preču saraksts; liela skenēšanas poga, precīza koda lookup; plus/mīnus/manuāls daudzums; Supabase Auth e-pasts/parole, admina kontu izveides funkcijas (tikai mock); 004 additive SQL migrācijas fails.
+
+Lokālie testi PASS: `npm run test:security`, `npm run test:static`, `npm run test:math`, `npm run test:history` (ar privātām kontrolsummām ārpus ZIP), `npm run build`, `python3 tests/e2e_smoke.py` (1440px/390px + simulēta staff RPC ievade). Vēsturiskie 67 819 + 5 980 atbilst; divi aritmētikas izņēmumi un sešas mērvienību kolīzijas nav mainītas.
+
+**Reālas Supabase pārbaudes ir daļēji sāktas:** lietotājs ziņoja, ka 001–003 migrācijas ir piemērotas un `tests/security_checks.sql` izpildījās sekmīgi (`Success. No rows returned`). Tas NAV pilns divu lietotāju RLS tests. **004 vēl nav izpildīta**, admin konts nav izveidots, ārējā Netlify+Supabase rakstīšana nav apstiprināta. Netlify lietotne ir `Live` kā statisks izvietojums.
+
+**Produkcijai NO-GO** līdz 004 migrācijas, live Auth/RLS, idempotences, backup/restore un grāmatvedības noteikumu testiem. `docs/V023_TEST_MATRIX.md`.

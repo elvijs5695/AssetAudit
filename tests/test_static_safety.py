@@ -17,3 +17,11 @@ assert 'CREATE POLICY profiles_self_read' in sql
 assert 'REVOKE ALL ON public.inventory_events' in sql
 assert (p/'.gitignore').read_text().find('private-data/')>=0
 print('PASS static safety checks; live RLS tests remain unexecuted')
+
+# v0.2.2: explicit privilege revocation and narrow regrant.
+patch=(p/'supabase/migrations/202611250003_privilege_hardening.sql').read_text()
+assert 'REVOKE ALL PRIVILEGES ON TABLE' in patch
+assert 'FROM PUBLIC, anon, authenticated;' in patch
+assert 'GRANT SELECT ON TABLE public.user_profiles, public.app_config TO authenticated;' in patch
+assert (p/'tests/diagnose_table_privileges.sql').exists()
+print('PASS least-privilege patch static checks; live server application unverified')

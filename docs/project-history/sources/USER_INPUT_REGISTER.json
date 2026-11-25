@@ -141,6 +141,38 @@
         "REQ-066",
         "REQ-067"
       ]
+    },
+    {
+      "id": "SRC-CHAT-EMAIL-AUTH-V023",
+      "date": "2026-11-25",
+      "type": "decision",
+      "text_verbatim": "Labi, pierunāji. Pārejam uz e-pastu sistēmu.",
+      "requirements": [
+        "REQ-068"
+      ]
+    },
+    {
+      "id": "SRC-CHAT-RLS-APPROVAL-V023",
+      "date": "2026-11-25",
+      "type": "decision",
+      "text_verbatim": "Labi, pierunāji.",
+      "requirements": [
+        "REQ-069"
+      ]
+    },
+    {
+      "id": "SRC-CHAT-UI-V023",
+      "date": "2026-11-25",
+      "type": "request",
+      "text_verbatim": "OK, komentāri:\n\nIzvairies no mārketinga saukļiem un noformējuma. Aplikācija ir funkcionāla. Pieturies pie minimāla dizaina, minimāla teksta, izvairies no nevajadzīgiem paskaidrojumiem. Fokuss uz datiem.\n\nPie sadaļām - Datu ievade; Preču saraksts (ievadītie invetarizācijas dati); Katalogs; Statistika; Administrācija\n\nPie datu ievadēm, meklētājs atgriež kataloga ierakstus, nevis inventarizācijas ierakstu datus. Pašlaik izskatās, ka atgriež pašus inventarizācijas ierakstus. Un tad, uzspiežot uz kataloga ieraksta, tas aizpilda datu ievades laukus. Līdz ar ko, tas nozīmē, ka kaut kur pašiem datu laukiem jābūt (paskati oriģinālo aplikāciju, kādi datu lauki pie ievades nepieciešami).\n\nUn tad pie datu meklēšnas jābūt lielai pogai, kas aizved uz kameru un koda skenēšanu. Kolīdz kamera atpazīst kodu, uzreiz tiek pārmeklēta datubāze uz konkrēto svītru kodu, ja atpazīst kataloga ierakstu pēc svītru koda, tad aizpilda visus datu laukus. Ja ne, tad aizpilda tikai svītru koda lauku. Tad, ir kases izvēle un preču daudzums. Daudzums ērti maināms ar + un - vai ievadāms manuāli, ja uzspiež uz paša cipara. Tad vēl ir mērvienības. Tiešām - paskati orīgnālo aplikāciju.",
+      "requirements": [
+        "REQ-070",
+        "REQ-071",
+        "REQ-072",
+        "REQ-073",
+        "REQ-074",
+        "REQ-075"
+      ]
     }
   ],
   "word_comments": [

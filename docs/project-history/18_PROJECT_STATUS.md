@@ -83,3 +83,8 @@
 - **Nav izdarīts:** nav GitHub repo, Supabase projekta, Netlify site, CI secrets, backup, datubāzes migrāciju vai produkcijas datu importa. TC-061..065 = **NOT_RUN**. Veikta tikai oficiālās pakalpojumu dokumentācijas pārbaude un dokumentācijas ZIP integritātes kontrole.
 - **Pārņemšanas kritiskās nianses:** personīgs vai organizācijas privātais GitHub repo Netlify Free integrācijai; Netlify Blobs Beta; Netlify Free 300 credits/hard cap; Supabase Free pēc ~7 dienām mazaktivitātes var apturēt DB; neatkarīga backup atjaunošana, RLS un naudas matemātika ir obligāti testi.
 - **Nākamais solis:** noteikt GitHub repo īpašnieku un sagatavot sintētisku, testējamu sākotnējo Netlify/Supabase/GitHub projektu; bez atsevišķas atļaujas neveikt sensitīvu datu importu vai norēķinu abonēšanu.
+
+
+## 2026-11-25 — koda kandidāts v0.2.3
+
+Iepriekšējā vēsture saglabāta. Jaunākā izstrāde: REQ-068..075, 5 sadaļas, kataloga ievade, svītrkodu meklēšana, e-pasta/paroles Auth Supabase, 004 papildinošā SQL migrācija. Lokālie tests PASS, bet 004 live migrācija, RLS 2 lietotāji, Android kamera, backup/restore, grāmatvedības audits NAV izpildīts. Aktuālais statuss un testi ir `docs/IMPLEMENTATION_STATUS.md` un `docs/V023_TEST_MATRIX.md`.

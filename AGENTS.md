@@ -46,3 +46,21 @@ Nenovietot īstos datus `site/`, `dist/`, GitHub failu vēsturē vai testu fixtu
 ## 2026-11-25: lietotājvārdu autentifikācija
 
 Pēdējais lietotāja lēmums: **nekādu darbinieku e-pastu**. Administrators piešķir unikālu lietotājvārdu un paroli; Supabase Auth alias ir tikai iekšēja implementācijas detaļa. Lietotāji nevar reģistrēties paši. Galvenā instrukcija `docs/GITHUB_SUPABASE_USERNAME_SETUP.md`; Supabase GitHub **Integration** ir tikai migrāciju versiju kontrole, nevis GitHub OAuth. Pre-production jātestē `.invalid` alias pieņemšana, reāls staff/admin RLS, paroles maiņas, atslēgšana, Supabase atslēgu saderība. Līdz tam nav apstiprināta produkcija.
+
+
+## BUG-SEC-001 (2026-11-25)
+Tests `tests/security_checks.sql` Supabase vidē ziņoja par neatļautu tiešo tabulas privilēģiju. Koda auditā atrasta anon SELECT neatsaukšana profilu/konfigurācijas tabulām; v0.2.2 pievieno **tikai papildinošu** migrāciju `202611250003_privilege_hardening.sql`. NEPĀRRAKSTĪT jau izpildītās migrācijas vēsturi un NEKAD neizpildīt pirmās divas migrācijas atkārtoti. Palaiž read-only `tests/diagnose_table_privileges.sql`, tad trešo migrāciju, tad `tests/security_checks.sql`. Reāls PASS vēl NAV ziņots; produktīva izvietošana NO-GO.
+
+
+## OBLIGĀTS atjauninājums v0.2.3 (2026-11-25): aizstāj veco sadaļu skaitu un username auth
+
+**Šis ir jaunākais lēmums, tas ir prioritārs pār iepriekšējiem AGENTS punktiem.**
+
+- Lietotājs noteica **5 sadaļas**: Datu ievade, Preču saraksts, Katalogs; adminam papildus Statistika, Administrācija. Darbiniekiem 3 sadaļas.
+- **Datu ievades** meklētājs ir katalogam, nevis inventarizācijas ierakstiem. Preču saraksts atsevišķi tikai jau ievadītajām precēm. Klikšķis uz kataloga varianta aizpilda ievades preces laukus. Liela skenera poga, precīzs barcode meklējums, nezināma koda gadījumā aizpildīts tikai svītrkods. Daudzums +/−/manuāli.
+- **Dizains** minimāls, bez mārketinga paskaidrojumiem, latviešu valodā.
+- **Autentifikācijas iepriekšējais lēmums (`username@...invalid`) IR ATCELTS.** Lietotājs izvēlējās Supabase Auth **e-pastu + paroli**; kontus veido administrators, reģistrēšanās pašiem aizliegta. `docs/GITHUB_SUPABASE_USERNAME_SETUP.md` ir tikai arhīvs.
+- Migrācijas 001–003 jau ir piemērotas lietotāja Supabase TEST vidē; `security_checks.sql` atgrieza `Success. No rows returned`. **NEKAD neatkārtot tās.** v0.2.3 datubāzes izmaiņas tikai `202611250004_email_auth.sql`. Tā vēl NAV īsti izpildīta.
+- Lietotāja Netlify izvietojums ir **Live**, bet tajā nav pārbaudīta Auth/DB datu rakstīšana. Neuzskatīt par produkcijas apstiprinājumu.
+- Dzīvais 2 lietotāju RLS, secret/publishable atslēgu saderība, Android kamera, backup+restore un grāmatvedības noteikumu apstiprinājums **NAV** pārbaudīti. **PRODUKCIJAI NO-GO**.
+- Aktuālie dokumenti `docs/EMAIL_AUTH_AND_DEPLOY_V023.md`, `docs/UI_FLOW_V023.md`, `docs/V023_TEST_MATRIX.md`, `docs/REQUIREMENT_TRACE_2026-11-25.md`. Ar katru jaunu lietotāja lēmumu saglabāt oriģinālo tekstu un prasību/testu ID; vecos lēmumus neaiztikt.
