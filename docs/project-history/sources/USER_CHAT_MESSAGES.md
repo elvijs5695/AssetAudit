@@ -109,3 +109,15 @@ Meaning: Supabase is not objectionable; Cloudflare R2 billing subscription / pay
 > Let's go for Netlify + Supabase + Github
 
 **Interpretācija:** galīgi izvēlēta platformu kombinācija aplikācijas izstrādei. Netlify izvieto PWA un vajadzīgās servera funkcijas, Supabase glabā PostgreSQL/Auth, GitHub privātā repozitorijā glabā kodu/dokumentāciju. No šīs frāzes **neizriet**, ka ir apstiprināta Netlify Blobs kā vienīgā disaster-recovery kopija, konkrēts Free plāns produkcijai vai norēķinu abonementa aktivizācija. Sk. `REQ-053`, `DEC-035`, `TC-061..065`. Iepriekšējie kandidāti netiek izdzēsti.
+
+## SRC-CHAT-USERNAME-AUTH — 2026-11-25
+
+> Es nevēlos e-pasta reģistrēšanās principu. Administrators piešķir unikālu lietotājvārdu un paroli, tas arī viss. Aplikāciju lietos mazs, ciešs kolektīvs, e-pastu apstiprināšana šo nevajadzīgi sarežģīs.
+
+## SRC-CHAT-SUPABASE-INSTRUCTIONS — 2026-11-25
+
+> Un kā tas mainīs Supabase sagatavošanas instrkciju?
+
+## SRC-CHAT-SUPABASE-GITHUB-LINK — 2026-11-25
+
+> Kā arī vēlos saslēgt supabase kopā ar github

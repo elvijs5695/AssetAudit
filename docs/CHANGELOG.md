@@ -1,3 +1,12 @@
+# v0.2.1 — 2026-11-25
+
+- Lietotāja prasība: izslēgt darbinieku e-pasta ielūgumus; administrators izveido lietotājvārdu/paroli.
+- Atsevišķa Supabase migrācija unikālam username un auditētai profila izveidei.
+- Netlify admin endpoint veido Supabase Auth kontu bez e-pasta apstiprināšanas. Paroles maiņa tikai serverī.
+- Dokumentēta privātā GitHub integrācija Supabase, neieslēdzot bīstamu automātisku datubāzes migrāciju.
+- No pirmkoda pakotnes izņemti reālo finanšu summu salīdzinājumi un QA ekrānattēli.
+- Neizpildītie testi: dzīvais Supabase Auth, `.invalid` domēna pieņemšana, jaunās atslēgas, RLS, backup restore.
+
 # Izmaiņu reģistrs
 
 ## v0.2.0 — 2026-11-25 — Pirmais izstrādes kandidāts

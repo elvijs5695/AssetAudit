@@ -18,3 +18,13 @@ Iepriekšējie sākotnējie komentāri un izmaiņu lēmumi atrodas `project-hist
 ## Dokumentācijas disciplīna
 
 Ja kāda prasība mainās: nekad neizdzēsiet veco ID; pievienojiet jaunu lēmumu ar vecā ID un jaunās prasības sasaisti, testa numuru, pārbaudes pierādījumu un laiku. Jebkurš neizpildīts tests paliek atsevišķi norādīts līdz faktiska rezultāta iegūšanai. Versija 0.2.0 nav produkcijas versija.
+
+## Papildinājums REQ-065..067 — 2026-11-25
+
+| ID | Lietotāja avots | Realizācija | Tests | Statuss |
+|---|---|---|---|---|
+| REQ-065 | tikai lietotājvārds/parole, bez darbinieku e-pastiem vai apstiprinājumiem | `site/js/api.js`, `site/js/app.js`, `netlify/functions/users.mjs`, otrā SQL migrācija | 12 servera mock testi, live Supabase nav veikts | daļēji, produkcijai NO-GO |
+| REQ-066 | izskaidrot izmaiņas Supabase sagatavošanā | `docs/GITHUB_SUPABASE_USERNAME_SETUP.md` | dzīvas vides iestatīšana vēl nav veikta | dokumentēts |
+| REQ-067 | sasaistīt Supabase ar personīgo privāto GitHub | `docs/GITHUB_SUPABASE_USERNAME_SETUP.md` | GitHub Integration vēl nav pieslēgta | instrukcija sagatavota |
+
+Oriģinālo lietotāja tekstu skatīt `docs/USER_DECISIONS_2026-11-25.md`. Neapstiprināt teoretizētas API īpašības kā produkcijas faktu.

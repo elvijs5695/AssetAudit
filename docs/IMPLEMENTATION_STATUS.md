@@ -36,3 +36,8 @@
 3. Jaunā tukšā TESTA Supabase vidē pārbaudīt SQL, pilno importu, RLS un atjaunošanu no backup, ar testa datu kopiju, nevis darba datubāzi.
 4. Pēc lietotāja kontu pieslēgšanas iziet divu lomu negatīvos testus; neatļaut produkcijas darbu, kamēr nav PASS.
 5. Saskaņot pavadzīmju importa algoritmu un tikai tad pievienot gada cikla UI.
+
+
+## v0.2.1 — username/password
+
+Pievienota lietotājvārda/paroles saskarne, admin konta izveide (nevis e-pasta ielūgums), paroles maiņa un lietotājvārdu unikālā atslēga SQL. Nav vēl īsta Supabase integrācijas testa, `.invalid` domēna pārbaudes, abu kontu drošības testa, Netlify izvietošanas vai backup restore. Produkcijai NO-GO.

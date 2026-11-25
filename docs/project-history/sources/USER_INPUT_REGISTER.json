@@ -108,6 +108,39 @@
       "text_verbatim": "Let's go for Netlify + Supabase + Github",
       "interpretation_status": "CONFIRMED_BY_USER - selected platform providers only",
       "implementation_note": "Select Netlify as PWA/app hosting, Supabase as Postgres/Auth, private GitHub for source. No instruction or authorization to deploy, connect accounts, publish source, activate billing, or designate Netlify Blobs as the sole backup. Preserve predecessor candidate decisions in change history. See DEC-035 and docs/29_SELECTED_STACK_IMPLEMENTATION_GATE.md."
+    },
+    {
+      "id": "SRC-CHAT-USERNAME-AUTH",
+      "date": "2026-11-25",
+      "type": "requirement",
+      "text_verbatim": "Es nevēlos e-pasta reģistrēšanās principu. Administrators piešķir unikālu lietotājvārdu un paroli, tas arī viss. Aplikāciju lietos mazs, ciešs kolektīvs, e-pastu apstiprināšana šo nevajadzīgi sarežģīs.",
+      "requirements": [
+        "REQ-065",
+        "REQ-066",
+        "REQ-067"
+      ]
+    },
+    {
+      "id": "SRC-CHAT-SUPABASE-INSTRUCTIONS",
+      "date": "2026-11-25",
+      "type": "request",
+      "text_verbatim": "Un kā tas mainīs Supabase sagatavošanas instrkciju?",
+      "requirements": [
+        "REQ-065",
+        "REQ-066",
+        "REQ-067"
+      ]
+    },
+    {
+      "id": "SRC-CHAT-SUPABASE-GITHUB-LINK",
+      "date": "2026-11-25",
+      "type": "request",
+      "text_verbatim": "Kā arī vēlos saslēgt supabase kopā ar github",
+      "requirements": [
+        "REQ-065",
+        "REQ-066",
+        "REQ-067"
+      ]
     }
   ],
   "word_comments": [

@@ -2,7 +2,7 @@
 
 ## Realizēts pirmkodā
 
-- Supabase Auth e-pasta/paroles pieslēgšanās; lietotāju profili (`staff`, `admin`, `active`). Publiskā pieteikšanās jāizslēdz Supabase dashboard.
+- Supabase Auth tehnikas aliasa/paroles pieslēgšanās, lietotājs ievada tikai username/paroli; lietotāju profili (`staff`, `admin`, `active`). Publiskā pieteikšanās jāizslēdz Supabase dashboard.
 - PostgreSQL: RLS visām jutīgām tabulām; tiešās `anon`/`authenticated` tiesības uz neapstrādātiem notikumiem atņemtas; darbības caur `SECURITY DEFINER` RPC ar `auth.uid()` un aktīva lietotāja pārbaudi.
 - `legacy_*_raw`, `inventory_events`, `catalogue_events`, `administration_events` ir UPDATE/DELETE bloķējoši trigeri.
 - Inventarizācijas `inventory_submit`: `request_id` vienreizēja identitāte, lietotāja/payload sakritība, ieraksta versijas konkurences aizsardzība un gada transakcijas bloķēšana; servera NUMERIC aprēķins; katalogs vienas transakcijas ietvaros.
@@ -39,3 +39,10 @@
 | Grāmatveža 35 noteikumu izskatīšana | NAV IZPILDĪTS | dokumentētas izvēles un aktīvs testu scenārijs |
 
 **Secinājums:** jaunā arhitektūra prioritizē datu drošību, bet produkcijai šī ir **NO-GO** versija līdz visu obligāto kritēriju izpildei.
+
+## Papildinājumi v0.2.1
+
+- GitHub integrācija: `Working directory .`, production automātiskās migrācijas ir **izslēgtas** līdz 2 kontu RLS/restore testiem.
+- Kontu izveide caur `auth.admin.createUser` semantiku (Auth Admin API) ar tehnisko `.invalid` aliasu, `email_confirm: true`, nevis ielūgumu.
+- Produkcijas bloks: reālā Supabase `.invalid` e-pasta identifikatora pieņemšana, legālo API atslēgu saderība, Auth/DB daļēju kļūdu atjaunošana un paroļu maiņas audits.
+- Jāpārbauda, ka Supabase `Authentication > Allow new users to sign up` ir OFF un `Confirm email` OFF, vienlaikus Email provider ir ON.

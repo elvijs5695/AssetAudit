@@ -42,3 +42,7 @@ Izveidota front-end PWA, tests ar reālajiem datiem lokālā read-only priekšsk
 ## Aizliegtā saīsināšana
 
 Nenovietot īstos datus `site/`, `dist/`, GitHub failu vēsturē vai testu fixtures. Nerādīt admin statistiku staff caur UI/API. Nepievienot automātisku kataloga gada pārveidi, kamēr `KAT-06, 07, 12, 15` nav grāmatvediski apstiprināti.
+
+## 2026-11-25: lietotājvārdu autentifikācija
+
+Pēdējais lietotāja lēmums: **nekādu darbinieku e-pastu**. Administrators piešķir unikālu lietotājvārdu un paroli; Supabase Auth alias ir tikai iekšēja implementācijas detaļa. Lietotāji nevar reģistrēties paši. Galvenā instrukcija `docs/GITHUB_SUPABASE_USERNAME_SETUP.md`; Supabase GitHub **Integration** ir tikai migrāciju versiju kontrole, nevis GitHub OAuth. Pre-production jātestē `.invalid` alias pieņemšana, reāls staff/admin RLS, paroles maiņas, atslēgšana, Supabase atslēgu saderība. Līdz tam nav apstiprināta produkcija.

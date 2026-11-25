@@ -1,4 +1,4 @@
-# Inventarizācija — v0.2.0 (izstrādes kandidāts)
+# Inventarizācija — v0.2.1 (izstrādes kandidāts)
 
 **Latviska, responsive PWA** uzņēmuma ikgadējai inventarizācijai. Izvēlētā arhitektūra: **privāts personīgais GitHub repozitorijs + Netlify + Supabase PostgreSQL/Auth**.
 
@@ -6,9 +6,9 @@
 
 ## Faili, kurus lejupielādēt
 
-1. `inventarizacija_app_v0.2.0.zip` — **tikai kods un dokumentācija**, drīkst likt **privātajā GitHub** (pēc pārbaudes).
-2. `inventarizacija_privatie_dati_v0.2.0.zip` — **konfidenciālie īstie vēsturiskie dati**. **Nekad** neievietot GitHub, Netlify publicējamajā mapē vai publiskā URL. Saglabāt šifrētā uzņēmuma krātuvē.
-3. `Gramatvedibas_un_kataloga_noteikumu_audits_v0.2.0.docx` — atsevišķi rediģējams grāmatvedības noteikumu apstiprināšanas dokuments.
+1. `inventarizacija_app_v0.2.1.zip` — **tikai kods un dokumentācija**, drīkst likt **privātajā GitHub** (pēc pārbaudes).
+2. `inventarizacija_privatie_dati_v0.2.1.zip` — **konfidenciālie īstie vēsturiskie dati**. **Nekad** neievietot GitHub, Netlify publicējamajā mapē vai publiskā URL. Saglabāt šifrētā uzņēmuma krātuvē.
+3. `Gramatvedibas_un_kataloga_noteikumu_audits_v0.2.1.docx` — atsevišķi rediģējams grāmatvedības noteikumu apstiprināšanas dokuments.
 
 ## Tūlītēja vēsturiskās datubāzes apskate uz datora
 
@@ -28,7 +28,7 @@ Priekšnosacījumi: instalēts **Node.js 22+** vai **Python 3**. Nav nepiecieša
 - **Datu ievade**: vecajam ieradumam tuva darbvirsmas tabula, meklēšana, grupēšana, individuālās rindas; ierīcēm pielāgota mobilā saskarne.
 - **Katalogs**: preču un cenu variantu meklēšana; admin papildus labo, pievieno un loģiski paslēpj variantu.
 - **Statistika** (admin): PZ, PL, atšķirība, datuma/laika skats (pilna vēsturiskā izsekojamība tikai jaunajām darbībām pēc importa).
-- **Administrācija** (admin): gads, uzaicināt/atslēgt lietotāju; pavadzīmju automātiska importa funkcija **vēl nav ieslēgta**, līdz grāmatvedis apstiprinās algoritmu.
+- **Administrācija** (admin): gads, izveidot/atslēgt lietotāju; pavadzīmju automātiska importa funkcija **vēl nav ieslēgta**, līdz grāmatvedis apstiprinās algoritmu.
 
 ## Salīdzināšana ar sākotnējo MySQL eksportu
 
@@ -42,4 +42,8 @@ Skatīt `docs/INSTALL_AND_DEPLOY.md` un `docs/SECURITY_AND_PRODUCTION_GATE.md`. 
 
 Pirmais fails: [`AGENTS.md`](AGENTS.md). Tad `docs/IMPLEMENTATION_STATUS.md`, `docs/REQUIREMENT_TRACE_2026-11-25.md`, `docs/catalogue_accounting_rules.md` un `docs/project-history/`.
 
-Versijas kods `v0.2.0` nozīmē pirmo kandidātu, nevis produkcijas izlaidumu.
+Versijas kods `v0.2.1` nozīmē pirmo kandidātu, nevis produkcijas izlaidumu.
+
+## Lietotājvārdi bez e-pastiem
+
+V0.2.1 darbiniekiem izmanto tikai lietotājvārdu un paroli. Admin lietotājus veido tieši, bez ielūgumu e-pastiem. Supabase Auth iekšēji joprojām izmanto tehnisku aliasu — to nedrīkst uzskatīt par īstu darbinieka e-pasta adresi. Skatīt `docs/GITHUB_SUPABASE_USERNAME_SETUP.md`. Produkcijas testi vēl NAV veikti.

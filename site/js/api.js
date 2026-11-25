@@ -1,13 +1,22 @@
 /** Minimal no-dependency Supabase Auth and PostgREST client.
  *  The browser contains ONLY the publishable ANON key; service role is NEVER here.
  */
+// Supabase Auth still expects an email/phone identifier internally. Staff never
+// provide an address: we use an undeliverable, RFC 2606 reserved internal alias.
+// MUST be validated against a live Supabase test project before production use.
+export const USERNAME_RE = /^[a-z][a-z0-9._-]{2,31}$/;
+export function identityForUsername(value){
+  const username=String(value||'').trim().toLowerCase();
+  if(!USERNAME_RE.test(username)||username.includes('..')||username.endsWith('.'))throw new Error('Lietotājvārdam jābūt 3–32 latīņu burtiem/cipariem; atļauti arī . _ -');
+  return username+'@accounts.inventory.invalid';
+}
 export class SupabaseAPI {
   constructor({supabaseUrl,supabaseAnonKey}){
     this.url=(supabaseUrl||'').replace(/\/$/,'');this.key=supabaseAnonKey||'';
     this.session=null;
     try{const s=sessionStorage.getItem('inv_session');if(s)this.session=JSON.parse(s);}catch{}
   }
-  get configured(){return this.url.startsWith('https://')&&this.key.length>15;}
+  get configured(){return this.url.startsWith('https://')&&this.key.length>15&&!this.key.startsWith('sb_publishable_');}
   store(){try{if(this.session)sessionStorage.setItem('inv_session',JSON.stringify(this.session));else sessionStorage.removeItem('inv_session');}catch{}}
   async request(path,{method='GET',body,auth=true,headers={}}={}){
     if(!this.configured)throw new Error('Supabase vēl nav konfigurēts');
@@ -17,8 +26,11 @@ export class SupabaseAPI {
     if(!res.ok)throw new Error(data?.message||data?.error_description||data?.error||data?.hint||`Servera kļūda (${res.status})`);
     return data;
   }
-  async login(email,password){
-    const s=await this.request('/auth/v1/token?grant_type=password',{method:'POST',auth:false,body:{email,password}});
+  async login(username,password){
+    const email=identityForUsername(username);
+    let s;
+    try{s=await this.request('/auth/v1/token?grant_type=password',{method:'POST',auth:false,body:{email,password}});}
+    catch{throw new Error('Nepareizs lietotājvārds vai parole');}
     this.session={...s,expires_at:Math.floor(Date.now()/1000)+Number(s.expires_in||3600)};this.store();
     return this.me();
   }
@@ -32,8 +44,8 @@ export class SupabaseAPI {
     if(!this.session?.access_token)throw new Error('Jāpieslēdzas no jauna');
     const me=await this.request('/auth/v1/user');
     const p=await this.request('/rest/v1/user_profiles?select=id,display_name,role,active&id=eq.'+encodeURIComponent(me.id));
-    if(!Array.isArray(p)||!p[0]?.active)throw new Error('Lietotāja profils nav aktivizēts. Sazinieties ar administratoru.');
-    return {...p[0],email:me.email};
+    if(!Array.isArray(p)||!p[0]?.active){this.session=null;this.store();throw new Error('Lietotāja profils nav aktivizēts. Sazinieties ar administratoru.');}
+    return {...p[0]};
   }
   async config(){const rows=await this.request('/rest/v1/app_config?select=active_year,locale,timezone');return rows?.[0]||{active_year:2026};}
   async rpc(fn,body){return this.request('/rest/v1/rpc/'+fn,{method:'POST',body});}
