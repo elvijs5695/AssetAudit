@@ -1,0 +1,404 @@
+{
+  "schema_version": "1.0",
+  "purpose": "Preserve user input verbatim for agent handoff and feature provenance.",
+  "source_files": [
+    {
+      "id": "SRC-LEGACY-ZIP",
+      "filename": "inventarizacija.zip",
+      "sha256": "71cfb4fa0f9bc6045051c0efc25fd8c73adaa4f22d5c252eba568a72d87a6f2c",
+      "contains_sensitive_data": true
+    },
+    {
+      "id": "SRC-R1-DOCX",
+      "filename": "komentari.docx",
+      "sha256": "31c6c557769f62f1dab1d5089608ed7aae75656bfb42ce8fbd8493f1e44d53eb",
+      "contains_sensitive_data": "may contain user metadata"
+    },
+    {
+      "id": "SRC-R2-DOCX",
+      "filename": "komentari(1).docx",
+      "sha256": "5dc249e4fc9496e5acc251aeefcd9c3118364f01e4d1ff890a607071accb5227",
+      "contains_sensitive_data": "may contain user metadata"
+    }
+  ],
+  "chat_messages": [
+    {
+      "id": "SRC-CHAT-INIT",
+      "date": "2026-11-25",
+      "type": "initial user request",
+      "excerpt_not_full_transcript": false,
+      "key_phrases_verbatim": [
+        "absolūti precīzs, kas ir ļoti svarīgi grāmatvedībā",
+        "ļoti ergonomisku, pārskatāmu un responsive",
+        "atvieglot katra gada datubāzes kataloga radīšanas procesu",
+        "Lietotāju pievienošana un administrēšana vienkārša",
+        "pirmajā gadā fotografē preču svītru kodus",
+        "Ļoti, ļoti, ļoti svarīgs ir datu nemainīgums",
+        "RAW datu ievades tabula, no kuras dati nekad netiek manipulēti"
+      ],
+      "note": "Full original user message (original spelling) is in USER_CHAT_MESSAGES.md; subsequent Word comments can supersede individual requirements.",
+      "full_text_location": "docs/sources/USER_CHAT_MESSAGES.md#src-chat-init--sākotnējā-ideja-2026-11-25"
+    },
+    {
+      "id": "SRC-CHAT-ROUND1",
+      "date": "2026-11-25",
+      "type": "instruction to read first Word comments",
+      "text_verbatim": "Lasi komentārus.",
+      "full_text_location": "docs/sources/USER_CHAT_MESSAGES.md"
+    },
+    {
+      "id": "SRC-CHAT-DOCS",
+      "date": "2026-11-25",
+      "type": "documentation handoff request",
+      "text_verbatim": "Nākamā komentāru kārta. Lūdzu, sāc veidot aplikācijas pakotnei pievienojamas instrukcijas, wishlist, arhitektūras ieskicējumus u.c. lietas, lai šo aplikācijas izstrādi jebkurā brīdī var pārņemt cits čats vai aģents. Vēlos arī lietotāja inputa izsekojamību, lai pēc daudzām iterācijām un versijām cits aģents var izprast katras funkcijas nozīmi."
+    },
+    {
+      "id": "SRC-CHAT-TIME-TRAVEL",
+      "date": "2026-11-25",
+      "type": "user follow-up: temporal history, backups, platform neutrality",
+      "text_verbatim": "Vai iekš paša supabase var izveidot shēmu, kurā tiek glabāta datu rezerves kopija? Vismaz aktīvajā inventarizācijā ievadītajiem datiem. Un aplikācijā varētu būt iespēja \"atgriezt\" stāvokli. No otras puses, ar append sistēmu vispār ir iespēja atgriezt stāvokli laikā arī bez rezerves kopijām, ne? Tā būtu lieliska iespēja administratoram, piemēram, grozot kalendāru un pulksteni, pārbaudīt datubāzes stāvokli un bilanci noteiktā brīdī. Unikālo preču katalogs gan būtu jāpapildina (jo preču ievadīšana, ja prece līdz šim nav bijusi katalogā, arī papildina katalogu). Tāpat katalogu arī papildina pievienotās pavadzīmes. Njā. Es te vienkārši domāju var data saving backup principiem. Jo reāli viss nav katru reizi jādublē. Ak, lietotāji arī. Bet, labi, backup dati, laikam būs atkarīgi no galīgās aplikācijas arhitektūras. Varbūt šeit sevi neierobežosim ar platformu apsvērumiem.",
+      "selected_prior_assistant_text": "Kur glabāt rezerves kopijas? Es paredzētu automātisku datubāzes eksportu uz neatkarīgu, privātu failu krātuvi. Administratoram var būt arī poga „Lejupielādēt rezerves kopiju”, taču manuāla lejupielāde nedrīkstētu būt vienīgais aizsardzības mehānisms. Precīzo glabāšanas pakalpojumu vēl izvēlēsimies.",
+      "full_text_location": "docs/sources/USER_CHAT_MESSAGES.md#src-chat-time-travel--rezerves-kopijas-un-vēsturiskais-stāvoklis",
+      "interpretation_note": "User explicitly values historical as-of inventory and balance, asks about reversible state and same-DB backups, clarifies that catalogue grows from counting and invoices and user-account data matters. Treat technical rollback, backup method and timestamp semantics as OPEN, not confirmed implementation."
+    },
+    {
+      "id": "SRC-CHAT-PRICE-YEAR",
+      "date": "2026-11-25",
+      "type": "user correction: legacy price zero semantics; blank code; year checks; audit request; backup question",
+      "text_verbatim": "Piezīme par preču plaukta cenu = 0. Tas izriet no tā, ka pavadzīmē ir tikai pavadzīmes cena. Plaukta cenu tā nezina. Plaukta cena ir zināma tikai aktīvi ievadītajām precēm, kas saskaitītias no plaukta jau inventarizācijas laikā. Precei cena nekad nebūs 0.00, šādu datu ievadi nedrīkst aizliegt, bet ir jābrīdina. \n\nVēl ir jābrīdina, ja inventarizācijas konfigurācijas gads atšķiras no aktuālā gada (ja iedziļināsies, redzēsi, ka man šī pārbaude un trekns brīdinājums jau eksistēja).\n\nPreces kods bieži var būt tukšs. \n\n- Ja viens kods/nosaukums parādās ar dažādām plaukta cenām un vienādu pavadzīmes cenu, vai pareizā ir pēdējā lietotāja labotā vai jebkurš atbilstošs variants?\nHmm, papēti manu loģiku. Man liekas, ka, ja katalogā esošai precei, pievienojot inventarizācijas vienumu, tika mainīta kāda cena, tas tika atjaunināts arī katalogā. izpēti, lūdzu. Man visi noteikumi bija gadu gaitā smalki atstrādāti, es nevēlētos to darīt un nejauši atklāt no jauna.\n\nPar rezerves kopijām - ko mēs te varam izdomāt? Varbūt ir kāda cita platforma, ne github, kas ir privāta, bezmaksas un atļauj arī database dump glabāšanu bez drošības riskiem?"
+    },
+    {
+      "id": "SRC-CHAT-HOST-CONSOLIDATION",
+      "date": "2026-11-25",
+      "type": "user correction: reduce deployment and backup platform count; privacy and free-tier preference",
+      "text_verbatim": "par glabātuvi es biju domājis arī aplikācijas online platformu. Negribētos pārāk daudz platformu iesaisti. Šajā ga'dijumā būtu jau github+supabase+cloudflare+rezerves kopijas. Gribētu aplikācijas platofrmu, kas der arī rezerves kopijām un ir ar privātumu."
+    },
+    {
+      "id": "SRC-CHAT-CAPACITY",
+      "date": "2026-11-25",
+      "type": "user request: quantify one-year inventory load for platform choice",
+      "text_verbatim": "Novērtē slodzi pēc viena gada datubāzes ierakstiem.",
+      "implementation_note": "Analysis only. Compare historical retained inventory rows and D1 read/write budget, not actual HTTP use. See docs/26_ANNUAL_LOAD_AND_CAPACITY.md."
+    },
+    {
+      "id": "SRC-CHAT-SUPABASE-LIMITS",
+      "date": "2026-11-25",
+      "type": "user query comparing Supabase versus D1 free-tier limits",
+      "text_verbatim": "Vai Supabase šādi ierobežojumi neeksistē?",
+      "implementation_note": "Platform tradeoff/research, not an approved production deployment. See docs/27_HYBRID_CLOUDFLARE_SUPABASE.md."
+    },
+    {
+      "id": "SRC-CHAT-HYBRID-STACK",
+      "date": "2026-11-25",
+      "type": "user suggestion for Cloudflare app and backups plus Supabase database",
+      "text_verbatim": "Klau, bet tad varbūt izmantojam Cloudflare pašai aplikācijai un rezerves kopiju rakstīsānai uz viņu servera, bet datubāzi atstājam Supabase?",
+      "implementation_note": "Platform tradeoff/research, not an approved production deployment. See docs/27_HYBRID_CLOUDFLARE_SUPABASE.md."
+    },
+    {
+      "id": "SRC-CHAT-NO-BILLING",
+      "date": "2026-11-25",
+      "type": "user platform preference re billing exposure",
+      "text_verbatim": "Par supabase nav iebildumu. Cloudflare man nepatīk norēķinu abonements...",
+      "implementation_note": "User accepts Supabase as candidate; dislikes Cloudflare billing subscription (especially R2 activation). Do NOT infer an absolute ban on Cloudflare free hosting; no production provider selected. See docs/28_NO_BILLING_PLATFORM_OPTION.md."
+    },
+    {
+      "id": "SRC-CHAT-STACK-SELECT",
+      "date": "2026-11-25",
+      "type": "explicit user platform selection",
+      "text_verbatim": "Let's go for Netlify + Supabase + Github",
+      "interpretation_status": "CONFIRMED_BY_USER - selected platform providers only",
+      "implementation_note": "Select Netlify as PWA/app hosting, Supabase as Postgres/Auth, private GitHub for source. No instruction or authorization to deploy, connect accounts, publish source, activate billing, or designate Netlify Blobs as the sole backup. Preserve predecessor candidate decisions in change history. See DEC-035 and docs/29_SELECTED_STACK_IMPLEMENTATION_GATE.md."
+    }
+  ],
+  "word_comments": [
+    {
+      "source_id": "SRC-R1-C0",
+      "document_id": "SRC-R1-DOCX",
+      "word_comment_id": "0",
+      "round": 1,
+      "comment_text_verbatim": "Te tā ideja bija, ka viena prece var būt izvietota vai pievienota vairākos piegājienos. Katrs piegājiens tiek saglabāts kā individuāls ieraksts, tomēr UI tiek attēlots kā visu ierakstu summa, kurai uzspiežot expand varēja apskatīt katru atsevišku pievienojumu. To katru atsevišķo ierakstu varēja arī labot, tāpēc liakam tās funkcijas (ja godīgi, esmu radījis šo sistēmu gandrīz 10 gadus atpakaļ, daudz ko neatceros). Un labošana būs vajadzīga, jo gala ziņojumā jāizdara korekcijas, lai “savilkut” kopā grāmatvedību. Bet man arī patīk tālāk aprakstītais append princips, tas saglabātu pilnīgu izsekojamību. Vienīgi risks datubāzei kļūt ļoti lielai.",
+      "anchor": [
+        {
+          "part": "word/document.xml",
+          "paragraph_excerpt": "Taču jau tagad ir viens svarīgs atklājums: pašreizējā sistēmā ievadītie dati nav nemainīgi. index.php tieši izpilda INSERT, UPDATE un DELETE operācijas tabulā preces. Tātad ierakstu var labot vai izdz"
+        }
+      ],
+      "word_comment_datetime_utc": "2026-11-25T21:01:00Z",
+      "interpretation_status": "reviewed; see linked requirements",
+      "note": "Text preserved as given; no spelling corrections."
+    },
+    {
+      "source_id": "SRC-R1-C1",
+      "document_id": "SRC-R1-DOCX",
+      "word_comment_id": "1",
+      "round": 1,
+      "comment_text_verbatim": "Cik atminos, doma bija, ka, ja ir vienādas preces, tad dominē pēdējā pievienotā vai tā, kas ir no aktuāla gada pavadzīmes. Šie 37 duplikāti varētu būt kāda kļūda.",
+      "anchor": [
+        {
+          "part": "word/document.xml",
+          "paragraph_excerpt": "Šie 37 gadījumi ir grupas ar vienādu kodu, nosaukumu un pavadzīmes cenu, bet atšķirīgu plaukta cenu."
+        }
+      ],
+      "word_comment_datetime_utc": "2026-11-25T21:04:00Z",
+      "interpretation_status": "reviewed; see linked requirements",
+      "note": "Text preserved as given; no spelling corrections."
+    },
+    {
+      "source_id": "SRC-R1-C2",
+      "document_id": "SRC-R1-DOCX",
+      "word_comment_id": "2",
+      "round": 1,
+      "comment_text_verbatim": "Jā, es gribētu, lai, sagatavojot jaunu gadu, sākumā tiktu pārnestas unikālās preces no iepriekšējā gada. Tad, savukārt ir iespēja pievienot papildinājumus noteiktā formātā, kā jau tas ir šobrīd. Un tad aplikācija pati izanalizētu – unikālas preces no pavadzīmes, kas savukārt, tiek salīdzinātas pret iepriekš ģenerēto katalogu. Radot katalogu, būtu iespēja salīdzināt (ja nav daudz ierakstu, tad individuālus ierakstus, ja daudz – tad vienkārši statistiku un varbūt izceltos kaut kādus aizdomīgos ierakstus), pirms apstiprināšanas. Un tā šo procesu varētu atkārto bezgalīgi, ja inventarizācijas laikā vajag papildināt ar jaunu pavadzīmi (jo preces turpina piegādāt arī inventarizācijas laikā). Svarīgi būtu šoreiz paredzēt arī svītru koda lauku. Man arī būtiski, lai katalogā atspoguļotos, no kura gada šī prece pievienota – iepriekšējā inventarizācijas gada, vai šī gada pavadzīmēm.",
+      "anchor": [
+        {
+          "part": "word/document.xml",
+          "paragraph_excerpt": "Mans priekšlikums: jaunā sistēma automātiski sagatavo nākamā gada katalogu, izmantojot iepriekšējā gada unikālās preces un jaunās pavadzīmes. Preču identitāti, cenu vēsturi un attiecīgā gada inventari"
+        }
+      ],
+      "word_comment_datetime_utc": "2026-11-25T21:05:00Z",
+      "interpretation_status": "reviewed; see linked requirements",
+      "note": "Text preserved as given; no spelling corrections."
+    },
+    {
+      "source_id": "SRC-R1-C3",
+      "document_id": "SRC-R1-DOCX",
+      "word_comment_id": "3",
+      "round": 1,
+      "comment_text_verbatim": "Šajā gadījumā var. Nav jāizšķir piegādātāji, svarīgi ir tikai cena. Cita lieta, ja divām precēm sanāk identiski kodi, tad jāpiedāvā datu izvēle.",
+      "anchor": [
+        {
+          "part": "word/document.xml",
+          "paragraph_excerpt": "Vēl svarīgāk — svītrkodu nedrīkst uzskatīt par sinonīmu preces ierakstam vai cenai. Vienam produktam var būt dažādi piegādātāji, iepirkuma cenas un cenu vēsture."
+        }
+      ],
+      "word_comment_datetime_utc": "2026-11-25T21:08:00Z",
+      "interpretation_status": "reviewed; see linked requirements",
+      "note": "Text preserved as given; no spelling corrections."
+    },
+    {
+      "source_id": "SRC-R1-C4",
+      "document_id": "SRC-R1-DOCX",
+      "word_comment_id": "4",
+      "round": 1,
+      "comment_text_verbatim": "Šo gan ir grūti risināt. Jo lieot’tajiem ir jāpiekļūst visiem datiem, lai var tos rediģēt. Neko darīt. Bet lieotāji nav tik advancēti.",
+      "anchor": [
+        {
+          "part": "word/document.xml",
+          "paragraph_excerpt": "Lietotāju tiesības obligāti jānodrošina serverī. Ir arī konceptuāls jautājums: ja parasts lietotājs drīkst iegūt visu preču finanšu datus, viņš potenciāli pats var aprēķināt bilanci. Tāpēc nepietiek t"
+        }
+      ],
+      "word_comment_datetime_utc": "2026-11-25T21:10:00Z",
+      "interpretation_status": "reviewed; see linked requirements",
+      "note": "Text preserved as given; no spelling corrections."
+    },
+    {
+      "source_id": "SRC-R1-C5",
+      "document_id": "SRC-R1-DOCX",
+      "word_comment_id": "5",
+      "round": 1,
+      "comment_text_verbatim": "Jā, labo šīs lietas, lūdzu.",
+      "anchor": [
+        {
+          "part": "word/document.xml",
+          "paragraph_excerpt": "Paroles tiek glabātas atklātā tekstā, un administrācijas saskarne tās attēlo."
+        }
+      ],
+      "word_comment_datetime_utc": "2026-11-25T21:11:00Z",
+      "interpretation_status": "reviewed; see linked requirements",
+      "note": "Text preserved as given; no spelling corrections."
+    },
+    {
+      "source_id": "SRC-R1-C6",
+      "document_id": "SRC-R1-DOCX",
+      "word_comment_id": "6",
+      "round": 1,
+      "comment_text_verbatim": "Es personīgi būtu par Supabase+Github, ko tu saki? Es vienkārši aplikācijai vairs nevēlētos uzturēt savu serveri. Brīva nepaŗtraukta interneta piekļuve liekas ērtāka un Supabase ir man pazīstams rīks. Ja nu vienīgi Supabase nav pats piemērotākais.Github free ar publisku piekļuvi vienīgi mazliet riskanti, ne?",
+      "anchor": [
+        {
+          "part": "word/document.xml",
+          "paragraph_excerpt": "Kopējais virziens, kuru es izvēlētos: saglabāt PHP un MySQL/MariaDB kā pilnīgi iespējamu servera pamatu, pārveidot datu modeli par auditējamu, nemaināmu uzskaites sistēmu un izveidot modernu PWA saska"
+        }
+      ],
+      "word_comment_datetime_utc": "2026-11-25T21:11:00Z",
+      "interpretation_status": "reviewed; see linked requirements",
+      "note": "Text preserved as given; no spelling corrections."
+    },
+    {
+      "source_id": "SRC-R1-C7",
+      "document_id": "SRC-R1-DOCX",
+      "word_comment_id": "7",
+      "round": 1,
+      "comment_text_verbatim": "Pagraba noliktavā reizēm nav. Bet es ļoti baidos par to, ka dati tiktu glabāti offline un tikai vēlāk sinhronizēti. Ļoti,ļoti vajadzētu aizsargāties no kavētiem pieprasījumiem, datu dublēšanās utml.",
+      "anchor": [
+        {
+          "part": "word/document.xml",
+          "paragraph_excerpt": "Ir viens jautājums, kas būtiski ietekmētu šo izvēli: vai inventarizācijas laikā visās uzņēmuma telpās ir stabils Wi-Fi, vai arī telefonam jāspēj pilnvērtīgi darboties bez interneta?"
+        }
+      ],
+      "word_comment_datetime_utc": "2026-11-25T21:13:00Z",
+      "interpretation_status": "reviewed; see linked requirements",
+      "note": "Text preserved as given; no spelling corrections."
+    },
+    {
+      "source_id": "SRC-R2-C0",
+      "document_id": "SRC-R2-DOCX",
+      "word_comment_id": "0",
+      "round": 2,
+      "comment_text_verbatim": "Es teiktu ka lietotāja skatā ir tikai aktuālie ieraksti. Pašreizējā aplikācijā parasts lieottājs varēja labot? Vajadzētu. Administratora skatā, savukārt, standartā ir parasts skats, bet ar opciju “Rādīt vēsturi”. Tad katram ierakstam ar gaišāku tekstu (dzeltenu – labots, sarkanu – dzēsts), tiek rādīta vēsture ar datumu un laiku, kurš laboja). Administrācija notiks no desktop platformas. Domāju, ka uz to arī fokuss admin paneļa datu attēlošānā. Bet tanī pat laikā admins arī varētu lietot telefona aplikāciju. Varbūt šis lieottājs vienkārši izvēlas režīmu – var pārslēgties no vieglā režīmu uz pilno režīmu.",
+      "anchor": [
+        {
+          "part": "word/document.xml",
+          "paragraph_excerpt": "1. Inventarizācijas ieraksti. Vienai precei var būt vairāki neatkarīgi ievades ieraksti, kurus interfeiss apkopo vienā rindā. Atverot rindu, var redzēt un koriģēt katru ievadi atsevišķi. Šo principu s"
+        }
+      ],
+      "word_comment_datetime_utc": "2026-11-25T21:16:00Z",
+      "interpretation_status": "reviewed; see linked requirements",
+      "note": "Text preserved as given; no spelling corrections."
+    },
+    {
+      "source_id": "SRC-R2-C1",
+      "document_id": "SRC-R2-DOCX",
+      "word_comment_id": "1",
+      "round": 2,
+      "comment_text_verbatim": "Jā, rūpīgi pārbaudi nosacījumus un prezentē man. Ja ir konflikti vai nepilnības, tad risināsim.",
+      "anchor": [
+        {
+          "part": "word/document.xml",
+          "paragraph_excerpt": "2. Cenu prioritāte. Tava sākotnējā iecere bija dot priekšroku pēdējam ierakstam vai aktuālā gada pavadzīmei. Šo noteikumu vajadzētu precīzi formalizēt. Iepriekš konstatētie 37 cenu konflikti jāpārbaud"
+        }
+      ],
+      "word_comment_datetime_utc": "2026-11-25T21:17:00Z",
+      "interpretation_status": "reviewed; see linked requirements",
+      "note": "Text preserved as given; no spelling corrections."
+    },
+    {
+      "source_id": "SRC-R2-C2",
+      "document_id": "SRC-R2-DOCX",
+      "word_comment_id": "2",
+      "round": 2,
+      "comment_text_verbatim": "Savā ziņā, tā ir tāda arī sākotnēja darbība. Tad, kad tiek beigta viena gada inventarizācija, tiek manuāli apstrādāti dati, lai grāmatvedības dati sakristu visās atskaitēs. Tad dati tiek noslēgti un rezultāts eksportēts. Šo sadaļu attīstīsim vēlāk. Un tad, savukārt, parasti pēc nepilna gada, tiek iesākta nākamā gada inventarizācija. Ja uzņēmums vēlēsies pakāpeniski ievadīt svītru kodus, iespējams attīstīsim domu par aplikāciju kā plašāku iespēju rīku.",
+      "anchor": [
+        {
+          "part": "word/document.xml",
+          "paragraph_excerpt": "3. Kataloga izveide. Tā nav vienreizēja gada sākuma darbība. Vispirms pārnesam iepriekšējā gada unikālās preces, pēc tam varam neierobežoti daudz reižu importēt jaunās pavadzīmes. Pirms katras apstipr"
+        }
+      ],
+      "word_comment_datetime_utc": "2026-11-25T21:18:00Z",
+      "interpretation_status": "reviewed; see linked requirements",
+      "note": "Text preserved as given; no spelling corrections."
+    },
+    {
+      "source_id": "SRC-R2-C3",
+      "document_id": "SRC-R2-DOCX",
+      "word_comment_id": "3",
+      "round": 2,
+      "comment_text_verbatim": "Vispaŗ var būt situācijas, kur svītru kodi sakrīt?",
+      "anchor": [
+        {
+          "part": "word/document.xml",
+          "paragraph_excerpt": "4. Svītrkodi. Piegādātāju dalījums tev nav nepieciešams. Svarīgi ir pareizi identificēt preci un tās cenu. Ja vienam svītrkodam atbilst vairāki varianti, lietotājs izvēlas pareizo. Te es tikai precizē"
+        }
+      ],
+      "word_comment_datetime_utc": "2026-11-25T21:19:00Z",
+      "interpretation_status": "reviewed; see linked requirements",
+      "note": "Text preserved as given; no spelling corrections."
+    },
+    {
+      "source_id": "SRC-R2-C4",
+      "document_id": "SRC-R2-DOCX",
+      "word_comment_id": "4",
+      "round": 2,
+      "comment_text_verbatim": "Par šo tev man būs soli pa solim jāpastāsta.",
+      "anchor": [
+        {
+          "part": "word/document.xml",
+          "paragraph_excerpt": "GitHub Free ļauj veidot privātus repozitorijus. Tev nav jāpublicē pirmkods. GitHub Pages bezmaksas plānā gan paredzēts publiskiem repozitorijiem, tādēļ PWA izvietošanai varam izmantot, piemēram, Cloud"
+        }
+      ],
+      "word_comment_datetime_utc": "2026-11-25T21:20:00Z",
+      "interpretation_status": "reviewed; see linked requirements",
+      "note": "Text preserved as given; no spelling corrections."
+    },
+    {
+      "source_id": "SRC-R2-C5",
+      "document_id": "SRC-R2-DOCX",
+      "word_comment_id": "5",
+      "round": 2,
+      "comment_text_verbatim": "Ja projekts tiek apturēts, vai tas pēc laika ir atjaunojams? Vai tas tiek dzēsts? Cik ir neaktivitātes periods, par kuru jāuztraucas?",
+      "anchor": [
+        {
+          "part": "word/document.xml",
+          "paragraph_excerpt": "Tomēr ir svarīgs ierobežojums: grāmatvedības sistēmas pastāvīgai ekspluatācijai neieteiktu Supabase Free. Bezmaksas projekti var tikt apturēti neaktivitātes dēļ, un tiem nav automātisko ikdienas rezer"
+        }
+      ],
+      "word_comment_datetime_utc": "2026-11-25T21:23:00Z",
+      "interpretation_status": "reviewed; see linked requirements",
+      "note": "Text preserved as given; no spelling corrections."
+    },
+    {
+      "source_id": "SRC-R2-C6",
+      "document_id": "SRC-R2-DOCX",
+      "word_comment_id": "6",
+      "round": 2,
+      "comment_text_verbatim": "Te admina panelī varētu būt iespēja backup failu lejuplādēt uz vietējā datora. No otras puses gan tas sarežģī lietotāja pieredzi. Kurā platformā aplikācija varētu “rakstīt” database dumps?",
+      "anchor": [
+        {
+          "part": "word/document.xml",
+          "paragraph_excerpt": "Tomēr ir svarīgs ierobežojums: grāmatvedības sistēmas pastāvīgai ekspluatācijai neieteiktu Supabase Free. Bezmaksas projekti var tikt apturēti neaktivitātes dēļ, un tiem nav automātisko ikdienas rezer"
+        }
+      ],
+      "word_comment_datetime_utc": "2026-11-25T21:24:00Z",
+      "interpretation_status": "reviewed; see linked requirements",
+      "note": "Text preserved as given; no spelling corrections."
+    },
+    {
+      "source_id": "SRC-R2-C7",
+      "document_id": "SRC-R2-DOCX",
+      "word_comment_id": "7",
+      "round": 2,
+      "comment_text_verbatim": "Nē, foto nevajag glabāt. Kamera fiksē kodu un kods tiek ievadīts datu laukā. Tiesa, jābūt pārliecībai, ka kods ir precīzi nolasīts.",
+      "anchor": [
+        {
+          "part": "word/document.xml",
+          "paragraph_excerpt": "Par datubāzes izmēru es īpaši neuztrauktos. Desmitiem vai simtiem tūkstošu teksta ierakstu PostgreSQL nav liels apjoms. Svītrkodu fotogrāfijas gan glabātu atsevišķā failu krātuvē."
+        }
+      ],
+      "word_comment_datetime_utc": "2026-11-25T21:23:00Z",
+      "interpretation_status": "reviewed; see linked requirements",
+      "note": "Text preserved as given; no spelling corrections."
+    },
+    {
+      "source_id": "SRC-R2-C8",
+      "document_id": "SRC-R2-DOCX",
+      "word_comment_id": "8",
+      "round": 2,
+      "comment_text_verbatim": "Sāksim ar pieņēmumu, ka aplikācija ir tikai online režīmā. Pēc tam varam attīstīt offline tēmu.",
+      "anchor": [
+        {
+          "part": "word/document.xml",
+          "paragraph_excerpt": "Ja prioritāte ir absolūta uzticamība, es sākotnēji izvēlētos tikai servera apstiprinātas ievades. Kamēr serveris nav atbildējis, ieraksts nav uzskatāms par saglabātu."
+        }
+      ],
+      "word_comment_datetime_utc": "2026-11-25T21:26:00Z",
+      "interpretation_status": "reviewed; see linked requirements",
+      "note": "Text preserved as given; no spelling corrections."
+    },
+    {
+      "source_id": "SRC-R2-C9",
+      "document_id": "SRC-R2-DOCX",
+      "word_comment_id": "9",
+      "round": 2,
+      "comment_text_verbatim": "Jā, izstrādā cilvēkam uztveramu un pārbaudāmu specifikčāciju.",
+      "anchor": [
+        {
+          "part": "word/document.xml",
+          "paragraph_excerpt": "Pirms jaunas sistēmas programmēšanas jānofiksē esošās sistēmas aprēķinu un inventarizācijas noteikumi kā pārbaudāma specifikācija. Pēc tam ar vēsturiskajiem datiem jāspēj pierādīt, ka jaunā sistēma ie"
+        }
+      ],
+      "word_comment_datetime_utc": "2026-11-25T21:26:00Z",
+      "interpretation_status": "reviewed; see linked requirements",
+      "note": "Text preserved as given; no spelling corrections."
+    }
+  ],
+  "capture_policy": "For every subsequent user input, append a new immutable source entry and a superseding decision, never silently rewrite older input."
+}

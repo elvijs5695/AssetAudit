@@ -1,0 +1,808 @@
+{
+  "schema_version": "1.0",
+  "generated_on": "2026-11-25",
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "title": "Grāmatvediskā precizitāte",
+      "description": "Finanšu aprēķiniem jābūt deterministiskiem, reproducējamiem un pārbaudāmiem; noapaļošanas noteikumi vēl jāapstiprina.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-CHAT-INIT"
+      ],
+      "acceptance_test_ids": [
+        "TC-010"
+      ],
+      "note": "Invariant, not a claim of verified legacy accuracy."
+    },
+    {
+      "id": "REQ-002",
+      "title": "Nemaināma ievades vēsture",
+      "description": "Sākotnējie ievades notikumi un korekcijas netiek pārrakstīti vai fiziski dzēsti ar aplikācijas lietotāja tiesībām.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-CHAT-INIT",
+        "SRC-R1-C0",
+        "SRC-R2-C0"
+      ],
+      "acceptance_test_ids": [
+        "TC-003"
+      ],
+      "note": "Backend/RLS grants and append-only event strategy are proposed implementation."
+    },
+    {
+      "id": "REQ-003",
+      "title": "Atsevišķi preces pievienojumi",
+      "description": "Vienas preces pievienojumi vairākos piegājienos paliek atsevišķi loģiski ieraksti.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-R1-C0"
+      ],
+      "acceptance_test_ids": [
+        "TC-001"
+      ],
+      "note": "Do not merge raw inventory entries."
+    },
+    {
+      "id": "REQ-004",
+      "title": "Aktuālo ierakstu apkopošana",
+      "description": "Vienas grupas aktuālie pievienojumi UI tiek sasummēti; atverot grupu, redz katru atsevišķi. Grupēšanas atslēga vēl precizējama.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-R1-C0",
+        "SRC-R2-C0",
+        "SRC-LEGACY-ZIP"
+      ],
+      "acceptance_test_ids": [
+        "TC-001"
+      ],
+      "note": "Legacy key: code,name,invoice price,shelf price,cash; units not grouped."
+    },
+    {
+      "id": "REQ-005",
+      "title": "Parastā lietotāja labošana",
+      "description": "Parasts lietotājs drīkst labot aktuālus inventarizācijas ierakstus, bet nevar labot RAW notikumu.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-R2-C0",
+        "SRC-R1-C0"
+      ],
+      "acceptance_test_ids": [
+        "TC-002"
+      ],
+      "note": "Confirm exact allowed fields when building forms."
+    },
+    {
+      "id": "REQ-006",
+      "title": "Vēstures redzamība administratoram",
+      "description": "Adminam ir izvēle Rādīt vēsturi; labotās versijas gaišākā/dzeltenā un dzēstās sarkanā ar datumu, laiku un aktoru.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-R2-C0"
+      ],
+      "acceptance_test_ids": [
+        "TC-004"
+      ],
+      "note": "Use text/icon status in addition to color for accessibility."
+    },
+    {
+      "id": "REQ-007",
+      "title": "Parastais skats bez vēstures",
+      "description": "Parastais lietotājs un admina noklusētais skats rāda tikai aktuālos ierakstus.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-R2-C0"
+      ],
+      "acceptance_test_ids": [
+        "TC-004"
+      ],
+      "note": "History may remain server-side auditable."
+    },
+    {
+      "id": "REQ-008",
+      "title": "Administratora režīmu pārslēgšana",
+      "description": "Administratoram ir vienkāršotais/vieglais un pilnais UI režīms; pilnais optimizēts desktop; arī admin var strādāt telefonā.",
+      "priority": "SHOULD",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-R2-C0"
+      ],
+      "acceptance_test_ids": [
+        "TC-012"
+      ],
+      "note": "Presentation mode must not modify server privileges."
+    },
+    {
+      "id": "REQ-009",
+      "title": "Lietotāju administrēšana",
+      "description": "Administrators pievieno, labo un deaktivizē lietotājus; identitāšu un notikumu vēsturi saglabā.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-CHAT-INIT"
+      ],
+      "acceptance_test_ids": [
+        "TC-013"
+      ],
+      "note": "Soft deactivation is implementation recommendation; avoid breaking audit FKs."
+    },
+    {
+      "id": "REQ-010",
+      "title": "Bilances piekļuve",
+      "description": "Finanšu kopsavilkumu un bilances API drīkst pieprasīt administrators; darbiniekam ir preču labošana, tādēļ visas izmaksas nav noslēpjamas.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-CHAT-INIT",
+        "SRC-R1-C4"
+      ],
+      "acceptance_test_ids": [
+        "TC-014"
+      ],
+      "note": "Server-level checks, not CSS hiding."
+    },
+    {
+      "id": "REQ-011",
+      "title": "Gada kataloga sākums",
+      "description": "Jaunā gada katalogu sagatavo no iepriekšējā noslēgtā inventarizācijas gada unikālajām precēm.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-R1-C2",
+        "SRC-R2-C2"
+      ],
+      "acceptance_test_ids": [
+        "TC-016"
+      ],
+      "note": "What defines uniqueness is pending."
+    },
+    {
+      "id": "REQ-012",
+      "title": "Atkārtots pavadzīmju imports",
+      "description": "Gada laikā papildpavadzīmes drīkst importēt atkārtoti, ar skatu uz atšķirībām pirms apstiprināšanas.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-R1-C2"
+      ],
+      "acceptance_test_ids": [
+        "TC-017"
+      ],
+      "note": "Raw file imports should preserve source batch and checksum."
+    },
+    {
+      "id": "REQ-013",
+      "title": "Kataloga importa priekšskatījums",
+      "description": "Mazām partijām individuālas izmaiņas; lielām statistika, aizdomīgu rindu izcelšana; tikai pēc apstiprinājuma maina aktīvo katalogu.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-R1-C2"
+      ],
+      "acceptance_test_ids": [
+        "TC-018"
+      ],
+      "note": "Threshold for small/large is open."
+    },
+    {
+      "id": "REQ-014",
+      "title": "Preces izcelsmes norāde",
+      "description": "Precei jābūt izsekojamai līdz iepriekšējā gada datiem vai konkrētai jaunā gada pavadzīmes importēšanai.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-R1-C2"
+      ],
+      "acceptance_test_ids": [
+        "TC-019"
+      ],
+      "note": "Separate origin year vs inventory year."
+    },
+    {
+      "id": "REQ-015",
+      "title": "Cenu prioritātes algoritms",
+      "description": "Precīza cenu un plaukta cenas prioritāte konfliktos jānoskaidro no koda un datiem, jāprezentē lietotājam apstiprināšanai.",
+      "priority": "MUST",
+      "status": "UNDER_INVESTIGATION",
+      "sources": [
+        "SRC-R1-C1",
+        "SRC-R2-C1",
+        "SRC-LEGACY-ZIP",
+        "SRC-CHAT-PRICE-YEAR"
+      ],
+      "acceptance_test_ids": [
+        "TC-020"
+      ],
+      "note": "Legacy PHP verified: adding/editing variant may INSERT a new exact tuple and DELETE matching zero-price placeholder; it does NOT UPDATE a single last-wins price. Details docs/25_LEGACY_PRICE_AND_YEAR_RULES.md. Conflict-group SQL still not deterministic."
+    },
+    {
+      "id": "REQ-016",
+      "title": "Barkoda ievade ar kameru",
+      "description": "Kamera tikai nolasa kodu; neuzglabā svītrkoda foto vai kameras kadrus.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-R2-C7",
+        "SRC-CHAT-INIT"
+      ],
+      "acceptance_test_ids": [
+        "TC-021"
+      ],
+      "note": "Latest user comment supersedes original idea to photograph code."
+    },
+    {
+      "id": "REQ-017",
+      "title": "Skenējuma uzticamība",
+      "description": "Pēc skenēšanas kodam jābūt precīzam: lietot standarta kontrolciparu validāciju un neskaidru skenējumu atkārtot.",
+      "priority": "MUST",
+      "status": "PROPOSED_NEEDS_CONFIRMATION",
+      "sources": [
+        "SRC-R2-C7"
+      ],
+      "acceptance_test_ids": [
+        "TC-022"
+      ],
+      "note": "Validation flow is proposal, accuracy goal is user-confirmed."
+    },
+    {
+      "id": "REQ-018",
+      "title": "Pakāpeniska svītrkodu vārdnīca",
+      "description": "Nezināmu kodu var sasaistīt ar preci; ar katru gadu iekšējā svītrkodu datubāze pieaug.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-CHAT-INIT",
+        "SRC-R1-C3"
+      ],
+      "acceptance_test_ids": [
+        "TC-023"
+      ],
+      "note": "No barcode-only assumption for price."
+    },
+    {
+      "id": "REQ-019",
+      "title": "Vairākas atbilstības vienam kodam",
+      "description": "Ja skenētam kodam ir vairākas atbilstošas cenas/pozīcijas, UI piedāvā nepārprotamu izvēli.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-R1-C3",
+        "SRC-R2-C3"
+      ],
+      "acceptance_test_ids": [
+        "TC-024"
+      ],
+      "note": "Product barcode identity and price option are separate."
+    },
+    {
+      "id": "REQ-020",
+      "title": "Sākotnēji tikai online",
+      "description": "V1 nesaglabā inventarizācijas rakstījumus offline režīmā; saglabāts tikai pēc servera apstiprinājuma.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-R2-C8",
+        "SRC-R1-C7"
+      ],
+      "acceptance_test_ids": [
+        "TC-006"
+      ],
+      "note": "Offline future backlog only."
+    },
+    {
+      "id": "REQ-021",
+      "title": "Idempotents saglabāšanas API",
+      "description": "Atkārtots vai kavēts identisks iesniegums nedrīkst izveidot vēl vienu uzskaites ierakstu.",
+      "priority": "MUST",
+      "status": "PROPOSED_NEEDS_CONFIRMATION",
+      "sources": [
+        "SRC-R1-C7",
+        "SRC-R2-C8"
+      ],
+      "acceptance_test_ids": [
+        "TC-005"
+      ],
+      "note": "Server-issued/caller-generated idempotency key with unique DB constraint proposed."
+    },
+    {
+      "id": "REQ-022",
+      "title": "Responsive un ātrs PWA",
+      "description": "Lietotāja ievades režīmam jābūt ātram un lietojamam desktop un mobilajās ierīcēs.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-CHAT-INIT"
+      ],
+      "acceptance_test_ids": [
+        "TC-025"
+      ],
+      "note": "No final framework selection."
+    },
+    {
+      "id": "REQ-023",
+      "title": "Supabase un privāts GitHub",
+      "description": "Sākotnējā Supabase un privāta GitHub izvēle ir precizēta ar galīgo trīs platformu izvēli: privāts GitHub pirmkodam/dokumentācijai, Supabase PostgreSQL/Auth un Netlify PWA izvietošanai. Visas platformas vēl jāuzstāda un jātestē.",
+      "priority": "SHOULD",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-R1-C6",
+        "SRC-R2-C4",
+        "SRC-CHAT-HOST-CONSOLIDATION",
+        "SRC-CHAT-STACK-SELECT"
+      ],
+      "acceptance_test_ids": [
+        "TC-026"
+      ],
+      "note": "Current selected architecture REQ-053/DEC-035 supersedes historic unselected candidates; source provenance preserved. Original requirement remains in register."
+    },
+    {
+      "id": "REQ-024",
+      "title": "Neatkarīgas rezerves kopijas",
+      "description": "Saglabāt neatkarīgu atjaunojamu datubāzes rezerves kopiju; admin lejupielāde kā papildu iespēja.",
+      "priority": "MUST",
+      "status": "PROPOSED_NEEDS_CONFIRMATION",
+      "sources": [
+        "SRC-R2-C5",
+        "SRC-R2-C6",
+        "SRC-CHAT-HOST-CONSOLIDATION"
+      ],
+      "acceptance_test_ids": [
+        "TC-027"
+      ],
+      "note": "Storage provider/retention policy pending."
+    },
+    {
+      "id": "REQ-025",
+      "title": "Gada slēgšana un eksports",
+      "description": "Pēc inventarizācijas saskaņot datus ar grāmatvedību, noslēgt gada stāvokli un eksportēt rezultātu.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-R2-C2"
+      ],
+      "acceptance_test_ids": [
+        "TC-028"
+      ],
+      "note": "Detailed accounting reconciliation intentionally deferred."
+    },
+    {
+      "id": "REQ-026",
+      "title": "Vizualizācijas un analītika",
+      "description": "Vēsturisku finanšu rādītāju analītikas panelis administratoram, no atvasinātajiem datiem.",
+      "priority": "COULD",
+      "status": "DEFERRED",
+      "sources": [
+        "SRC-CHAT-INIT"
+      ],
+      "acceptance_test_ids": [
+        "TC-029"
+      ],
+      "note": "Charts/statistics not yet specified."
+    },
+    {
+      "id": "REQ-027",
+      "title": "Norēķinu datu precizitāte",
+      "description": "Finanšu aprēķiniem jābūt precīziem bez binary floating-point uzskaites kļūdām; PostgreSQL NUMERIC vai SQLite sistēmā mērogoti veseli skaitļi ir izvērtējamas realizācijas. Noapaļošana jāapstiprina.",
+      "priority": "MUST",
+      "status": "PROPOSED_NEEDS_CONFIRMATION",
+      "sources": [
+        "SRC-CHAT-INIT",
+        "SRC-LEGACY-ZIP"
+      ],
+      "acceptance_test_ids": [
+        "TC-010"
+      ],
+      "note": "Proposed technical control for confirmed business invariant."
+    },
+    {
+      "id": "REQ-028",
+      "title": "Piekļuves kontroles un drošība",
+      "description": "Lietotāju autentifikācija, servera lomu pārbaudes, stingrs RLS, nekādu plain-text paroļu vai klienta admin atslēgu.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-R1-C5",
+        "SRC-LEGACY-ZIP"
+      ],
+      "acceptance_test_ids": [
+        "TC-014"
+      ],
+      "note": "Complete threat model before launch."
+    },
+    {
+      "id": "REQ-029",
+      "title": "Vēsturiskās migrācijas salīdzinājums",
+      "description": "Pirms pārslēgšanās aprēķināt salīdzināmas vecās un jaunās atskaites un apstiprināt katru atšķirību.",
+      "priority": "MUST",
+      "status": "PROPOSED_NEEDS_CONFIRMATION",
+      "sources": [
+        "SRC-CHAT-INIT",
+        "SRC-R2-C9"
+      ],
+      "acceptance_test_ids": [
+        "TC-030"
+      ],
+      "note": "Use anonymized fixtures in repository."
+    },
+    {
+      "id": "REQ-030",
+      "title": "Cilvēkam lasāma specifikācija",
+      "description": "Katrs aprēķina un uzvedības noteikums aprakstīts ar ievadi, formulu, piemēru, pieņemšanas testu un saiti uz oriģinālo komentāru.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-R2-C9",
+        "SRC-CHAT-DOCS"
+      ],
+      "acceptance_test_ids": [
+        "TC-031"
+      ],
+      "note": "Documentation as project deliverable."
+    },
+    {
+      "id": "REQ-031",
+      "title": "Aģentu pārņemamība",
+      "description": "Katram nākamajam aģentam ir jāatjauno wishlist, prasību statuss, lēmumi, testu žurnāls un versijas izmaiņas, saglabājot oriģinālo lietotāja inputu.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-CHAT-DOCS"
+      ],
+      "acceptance_test_ids": [
+        "TC-032"
+      ],
+      "note": "Do not silently overwrite user rationale."
+    },
+    {
+      "id": "REQ-032",
+      "title": "Offline nākotnē",
+      "description": "Pilns offline režīms ir atsevišķs, pēc V1 apsverams produkta virziens, nevis klusām pievienota V1 funkcija.",
+      "priority": "COULD",
+      "status": "DEFERRED",
+      "sources": [
+        "SRC-R2-C8",
+        "SRC-R1-C7"
+      ],
+      "acceptance_test_ids": [
+        "TC-033"
+      ],
+      "note": "Do not cache unsynced writes in current release."
+    },
+    {
+      "id": "REQ-033",
+      "title": "Administrators skatās stāvokli pagātnē",
+      "description": "Administratoram ir tikai-lasāms datuma/laika izvēles režīms, kas rekonstruē aktīvās inventarizācijas ievades situāciju noteiktā brīdī.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-CHAT-TIME-TRAVEL"
+      ],
+      "acceptance_test_ids": [
+        "TC-034"
+      ],
+      "note": "Historical view; not a destructive DB restore."
+    },
+    {
+      "id": "REQ-034",
+      "title": "Vēsturiskās bilances reproducēšana",
+      "description": "Par izvēlēto brīdi var iegūt inventarizācijas stāvokli un bilanci, ieskaitot tajā brīdī zināmās preces un cenu versijas; precīza cenu un retroaktīvu labojumu semantika jāapstiprina.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-CHAT-TIME-TRAVEL"
+      ],
+      "acceptance_test_ids": [
+        "TC-035"
+      ],
+      "note": "Separate what was known then vs retrospective recalculation; no guessing of price rule."
+    },
+    {
+      "id": "REQ-035",
+      "title": "Kataloga pieaugums inventarizācijā un importos",
+      "description": "Jauna iepriekš nezināma prece var tikt pievienota inventarizācijas ievades procesā; pavadzīmju apstiprināšana arī papildina katalogu. Jāsaglabā izcelsmes saites un laika vēsture.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-CHAT-TIME-TRAVEL"
+      ],
+      "acceptance_test_ids": [
+        "TC-036"
+      ],
+      "note": "Exact authorization and confirmation stages remain open (Q-015)."
+    },
+    {
+      "id": "REQ-036",
+      "title": "Loģiska vēsturiska stāvokļa atgriešana",
+      "description": "Iespēja administratoram ar priekšskatījumu atcelt vai kompensēt nevēlamas izmaiņas, nepārrakstot RAW vēsturi; masveida rollback tvērums un apstiprināšana vēl nav nolemti.",
+      "priority": "SHOULD",
+      "status": "PREFERENCE_NOT_FINAL",
+      "sources": [
+        "SRC-CHAT-TIME-TRAVEL"
+      ],
+      "acceptance_test_ids": [
+        "TC-037"
+      ],
+      "note": "User said \"varētu\"; do not implement an unconditional revert button."
+    },
+    {
+      "id": "REQ-037",
+      "title": "Lietotāju dati atjaunošanas tvērumā",
+      "description": "Rezerves kopiju/atjaunošanas projektā jāņem vērā lietotāju konti, profili un tiesību iestatījumi, ne tikai inventarizācijas rindas; atsevišķi noskaidrot auth servisa atjaunošanu.",
+      "priority": "MUST",
+      "status": "PREFERENCE_NOT_FINAL",
+      "sources": [
+        "SRC-CHAT-TIME-TRAVEL"
+      ],
+      "acceptance_test_ids": [
+        "TC-038"
+      ],
+      "note": "User said \"Ak, lietotāji arī\"; do not assume auth secrets can be recovered from DB-only dump."
+    },
+    {
+      "id": "REQ-038",
+      "title": "Platformneatkarīga datu saglabāšanas arhitektūra",
+      "description": "Sākotnējā datu saglabāšanas, vēsturiskās rekonstrukcijas un katastrofu atjaunošanas loģika nedrīkst paļauties uz vienas platformas specifiskām iespējām.",
+      "priority": "SHOULD",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-CHAT-TIME-TRAVEL"
+      ],
+      "acceptance_test_ids": [
+        "TC-039"
+      ],
+      "note": "Supabase remains candidate; backup design neutral."
+    },
+    {
+      "id": "REQ-039",
+      "title": "Atjaunojami stāvokļa momentuzņēmumi",
+      "description": "Apsvērt atvasinātus stāvokļa momentuzņēmumus un pakāpeniskas rezerves kopijas, lai nebūtu katru reizi jāveido pilnīga aktuālo datu kopija.",
+      "priority": "COULD",
+      "status": "PROPOSED_NEEDS_CONFIRMATION",
+      "sources": [
+        "SRC-CHAT-TIME-TRAVEL"
+      ],
+      "acceptance_test_ids": [
+        "TC-040"
+      ],
+      "note": "Performance snapshots are not independent backups; backup delta integrity must be verified."
+    },
+    {
+      "id": "REQ-040",
+      "title": "Nezināma plaukta cena pavadzīmes importā",
+      "description": "Pavadzīmes imports sniedz pavadzīmes cenu, bet parasti ne plaukta cenu; 0.00 importa katalogā ir vēsturisks marķieris nezināmai PL cenai. Jaunajā modelī nezināmo cenu konceptuāli atšķirt no lietotāja ievadītas 0.00.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-CHAT-PRICE-YEAR",
+        "SRC-LEGACY-ZIP"
+      ],
+      "acceptance_test_ids": [
+        "TC-041"
+      ],
+      "note": "Business meaning confirmed; implementation via nullable field is a proposal, not mandatory physical DB design."
+    },
+    {
+      "id": "REQ-041",
+      "title": "Nulles cenas brīdinājums, ne aizliegums",
+      "description": "Aktīvā inventarizācijas ievadē cena 0.00 rada nepārprotamu brīdinājumu, tomēr lietotājs drīkst šo ievadi apstiprināt.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-CHAT-PRICE-YEAR"
+      ],
+      "acceptance_test_ids": [
+        "TC-042"
+      ],
+      "note": "Specify separately for PZ and PL; an imported unknown PL is not equivalent to a user-entered zero price."
+    },
+    {
+      "id": "REQ-042",
+      "title": "Tukšs preces kods ir atļauts",
+      "description": "Preces kods var būt tukšs; tukša koda dēļ ievade, meklēšana vai kataloga importēšana netiek bloķēta vai automātiski sapludināta ar nesaistītu preci.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-CHAT-PRICE-YEAR",
+        "SRC-LEGACY-ZIP"
+      ],
+      "acceptance_test_ids": [
+        "TC-043"
+      ],
+      "note": "Verify fallback matching rules; blank is not barcode."
+    },
+    {
+      "id": "REQ-043",
+      "title": "Konfigurētā gada neatbilstības brīdinājums",
+      "description": "Ja konfigurētais inventarizācijas gads neatbilst servera pašreizējam kalendāra gadam, lietotājam skaidri izcelt brīdinājumu. Atsevišķi saglabāt brīdinājumu, ja apskatāmais gads atšķiras no konfigurētā.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-CHAT-PRICE-YEAR",
+        "SRC-LEGACY-ZIP"
+      ],
+      "acceptance_test_ids": [
+        "TC-044"
+      ],
+      "note": "Legacy index.php lines 484-486 only compare viewed year to configured year; user recalls additional behavior, not present in archive."
+    },
+    {
+      "id": "REQ-044",
+      "title": "Saglabāt un pierādīt vecās kataloga cenas aktualizācijas uzvedību",
+      "description": "Pirms mainīt katalogu, reproducēt esošo precīzo variantu pievienošanas, cenas 0.00 aizstāšanas un citu jau zināmo cenu variantu saglabāšanas loģiku, arī tās robežgadījumus.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-CHAT-PRICE-YEAR",
+        "SRC-LEGACY-ZIP"
+      ],
+      "acceptance_test_ids": [
+        "TC-045"
+      ],
+      "note": "User confirmed intent to preserve refined behavior; specific existing implementation is LEGACY_OBSERVED, not approved flawless algorithm."
+    },
+    {
+      "id": "REQ-045",
+      "title": "Samazināt pastāvīgo platformu skaitu",
+      "description": "Vēlams, lai viena privāta online platforma nodrošinātu PWA, API, datubāzi un backup krātuvi; GitHub vai cits Git serviss tikai pirmkodam. Platforma jāizvēlas pēc precizitātes, drošības, izmaksu un atjaunošanas testiem.",
+      "priority": "SHOULD",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-CHAT-HOST-CONSOLIDATION"
+      ],
+      "acceptance_test_ids": [
+        "TC-046"
+      ],
+      "note": "Cloudflare candidate only; platform-count objective is confirmed; selection not confirmed."
+    },
+    {
+      "id": "REQ-046",
+      "title": "Privātums pilnā sistēmas tvērumā",
+      "description": "Lietotne, API, datubāze, backups, projekta pirmkods un izstrādes priekšskatījumi jāsargā ar autentifikāciju, lomām un minimālām pieejas tiesībām; publiskais internets nedrīkst atklāt datus.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-CHAT-HOST-CONSOLIDATION",
+        "SRC-CHAT-INIT"
+      ],
+      "acceptance_test_ids": [
+        "TC-047"
+      ],
+      "note": "Privacy does not mean internet hostname is secret; auth and server checks must be enforced."
+    },
+    {
+      "id": "REQ-047",
+      "title": "Backup ārpus primārās kļūmju vides",
+      "description": "Lai gan viens pakalpojumu sniedzējs ir vēlamais ekspluatācijas modelis, papildus viena konta ietvaros glabātām kopijām jāparedz periodiska pārbaudīta ārpus-konta šifrēta kopija vai līdzvērtīga aizsardzība pret konta zaudējumu.",
+      "priority": "MUST",
+      "status": "PROPOSED_NEEDS_CONFIRMATION",
+      "sources": [
+        "SRC-CHAT-HOST-CONSOLIDATION",
+        "SRC-CHAT-TIME-TRAVEL"
+      ],
+      "acceptance_test_ids": [
+        "TC-048"
+      ],
+      "note": "External cold backup can be stored offline by company; need not create continuously active fifth SaaS account."
+    },
+    {
+      "id": "REQ-048",
+      "title": "Candidate: Cloudflare for PWA/API, Supabase for PostgreSQL/Auth",
+      "description": "Evaluate Cloudflare Workers (static assets + server endpoints) and Supabase PostgreSQL/Auth together; avoid mandatory D1 and keep a private GitHub repository.",
+      "priority": "SHOULD",
+      "status": "PREFERENCE_NOT_FINAL",
+      "sources": [
+        "SRC-CHAT-HYBRID-STACK",
+        "SRC-CHAT-SUPABASE-LIMITS"
+      ],
+      "acceptance_test_ids": [
+        "TC-052"
+      ],
+      "note": "Suggested by user as a question. Treat the hybrid architecture as an active candidate, not as a selected platform."
+    },
+    {
+      "id": "REQ-049",
+      "title": "Cloudflare R2 backup of Supabase, fully restorable",
+      "description": "Assess private, encrypted off-provider database backups in Cloudflare R2, with schema, data, roles, auth identity data, and referenced objects/configuration restored by a tested runbook.",
+      "priority": "MUST",
+      "status": "PROPOSED_NEEDS_CONFIRMATION",
+      "sources": [
+        "SRC-CHAT-HYBRID-STACK",
+        "SRC-CHAT-TIME-TRAVEL"
+      ],
+      "acceptance_test_ids": [
+        "TC-053",
+        "TC-054"
+      ],
+      "note": "R2 storage was suggested by the user. Exact implementation and backup schedule are not confirmed. The Supabase CLI default dump excludes auth and managed schema; more than one export step is required."
+    },
+    {
+      "id": "REQ-050",
+      "title": "Operational resilience with separate service quotas",
+      "description": "Validate Supabase Free pausing and database availability, Cloudflare Workers resource quotas, R2 billing/access and backup scheduler alerting. A healthy UI must not claim a failed database write succeeded.",
+      "priority": "MUST",
+      "status": "PROPOSED_NEEDS_CONFIRMATION",
+      "sources": [
+        "SRC-CHAT-SUPABASE-LIMITS",
+        "SRC-CHAT-HYBRID-STACK"
+      ],
+      "acceptance_test_ids": [
+        "TC-055",
+        "TC-056"
+      ],
+      "note": "A Cloudflare-hosted frontend remains reachable when Supabase is paused; this must be surfaced clearly to users. No cloud tests executed."
+    },
+    {
+      "id": "REQ-051",
+      "title": "No automatic charge exposure or payment subscription for application/backup hosting",
+      "description": "Prefer production-friendly Free hosting and independently stored encrypted backups that do not require credit-card billing subscriptions or allow automatic overage charges. Clearly disclose when a free tier stops serving upon quota exhaustion and any exceptions to this condition.",
+      "priority": "MUST",
+      "status": "CONFIRMED_USER_PREFERENCE",
+      "sources": [
+        "SRC-CHAT-NO-BILLING"
+      ],
+      "acceptance_test_ids": [
+        "TC-057",
+        "TC-058"
+      ],
+      "note": "The user specifically objects to Cloudflare billing subscription. Do not treat this as consent to Netlify or a ban on every Cloudflare product. For storage, compare durability and off-service failure domains."
+    },
+    {
+      "id": "REQ-052",
+      "title": "Investigate Netlify Blobs as private encrypted backup medium (not yet approved)",
+      "description": "Selected PWA host is Netlify (DEC-035), but encrypted site-wide Netlify Blobs as a disaster-recovery destination remains under evaluation. Check beta stability, billing-free limits, independent restore, privacy, region and repo owner compatibility.",
+      "priority": "SHOULD",
+      "status": "UNDER_INVESTIGATION",
+      "sources": [
+        "SRC-CHAT-NO-BILLING",
+        "SRC-CHAT-HOST-CONSOLIDATION",
+        "SRC-CHAT-STACK-SELECT"
+      ],
+      "acceptance_test_ids": [
+        "TC-058",
+        "TC-059",
+        "TC-060"
+      ],
+      "note": "Host provider is selected by user; Netlify Blobs backup selection is not confirmed. Tests TC-058..060 remain NOT_RUN."
+    },
+    {
+      "id": "REQ-053",
+      "title": "Selected stack: Netlify PWA + Supabase PostgreSQL/Auth + private GitHub",
+      "description": "Build future inventory application using Netlify for PWA/hosting, Supabase for PostgreSQL/authentication, private GitHub for versioned source and documentation. This is a platform decision, not a directive to create/connect accounts, activate billing or migrate user records.",
+      "priority": "MUST",
+      "status": "CONFIRMED_BY_USER",
+      "sources": [
+        "SRC-CHAT-STACK-SELECT"
+      ],
+      "acceptance_test_ids": [
+        "TC-061",
+        "TC-062",
+        "TC-063",
+        "TC-065"
+      ],
+      "note": "See DEC-035 and docs/29_SELECTED_STACK_IMPLEMENTATION_GATE.md. Repo owner and actual Netlify Free Git integration remain to be tested."
+    },
+    {
+      "id": "REQ-054",
+      "title": "Assess encrypted backup to Netlify storage with independent restore",
+      "description": "Investigate storing encrypted, versioned Supabase dumps in private Netlify Blobs as ONE backup destination; test full schema/data/auth/role and accounting restore plus out-of-account recovery copy. Avoid treating append-only history as disaster backup.",
+      "priority": "MUST",
+      "status": "UNDER_INVESTIGATION",
+      "sources": [
+        "SRC-CHAT-STACK-SELECT",
+        "SRC-CHAT-NO-BILLING",
+        "SRC-CHAT-TIME-TRAVEL"
+      ],
+      "acceptance_test_ids": [
+        "TC-064"
+      ],
+      "note": "No approval of Netlify Blobs as only backup or confirmation of backup schedule; Beta and Netlify usage risks unresolved."
+    }
+  ]
+}

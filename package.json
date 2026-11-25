@@ -1,0 +1,15 @@
+{
+  "name": "inventarizacija",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Privāta inventarizācijas PWA — Supabase un Netlify",
+  "scripts": {
+    "build": "node scripts/build_site.mjs",
+    "test:security": "node --test tests/test_server_auth.mjs",
+    "test:static": "python3 tests/test_static_safety.py",
+    "test:history": "python3 tests/verify_historical.py",
+    "test:math": "node --test tests/test_accounting.mjs"
+  },
+  "engines": {"node": ">=22"}
+}

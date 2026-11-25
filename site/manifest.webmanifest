@@ -1,0 +1,11 @@
+{
+  "name":"Inventarizācija",
+  "short_name":"Inventarizācija",
+  "description":"Preču uzskaite un gada inventarizācija",
+  "lang":"lv",
+  "start_url":"/",
+  "display":"standalone",
+  "background_color":"#f7f8f5",
+  "theme_color":"#183833",
+  "icons":[{"src":"/assets/mark.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}

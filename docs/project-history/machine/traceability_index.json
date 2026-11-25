@@ -1,0 +1,154 @@
+{
+  "schema_version": "1.0",
+  "updated_on": "2026-11-25",
+  "source_to_requirements": {
+    "SRC-CHAT-INIT": [
+      "REQ-001",
+      "REQ-002",
+      "REQ-009",
+      "REQ-010",
+      "REQ-016",
+      "REQ-018",
+      "REQ-022",
+      "REQ-026",
+      "REQ-027",
+      "REQ-029",
+      "REQ-046"
+    ],
+    "SRC-R1-C0": [
+      "REQ-002",
+      "REQ-003",
+      "REQ-004",
+      "REQ-005"
+    ],
+    "SRC-R2-C0": [
+      "REQ-002",
+      "REQ-004",
+      "REQ-005",
+      "REQ-006",
+      "REQ-007",
+      "REQ-008"
+    ],
+    "SRC-LEGACY-ZIP": [
+      "REQ-004",
+      "REQ-015",
+      "REQ-027",
+      "REQ-028",
+      "REQ-040",
+      "REQ-042",
+      "REQ-043",
+      "REQ-044"
+    ],
+    "SRC-R1-C4": [
+      "REQ-010"
+    ],
+    "SRC-R1-C2": [
+      "REQ-011",
+      "REQ-012",
+      "REQ-013",
+      "REQ-014"
+    ],
+    "SRC-R2-C2": [
+      "REQ-011",
+      "REQ-025"
+    ],
+    "SRC-R1-C1": [
+      "REQ-015"
+    ],
+    "SRC-R2-C1": [
+      "REQ-015"
+    ],
+    "SRC-CHAT-PRICE-YEAR": [
+      "REQ-015",
+      "REQ-040",
+      "REQ-041",
+      "REQ-042",
+      "REQ-043",
+      "REQ-044"
+    ],
+    "SRC-R2-C7": [
+      "REQ-016",
+      "REQ-017"
+    ],
+    "SRC-R1-C3": [
+      "REQ-018",
+      "REQ-019"
+    ],
+    "SRC-R2-C3": [
+      "REQ-019"
+    ],
+    "SRC-R2-C8": [
+      "REQ-020",
+      "REQ-021",
+      "REQ-032"
+    ],
+    "SRC-R1-C7": [
+      "REQ-020",
+      "REQ-021",
+      "REQ-032"
+    ],
+    "SRC-R1-C6": [
+      "REQ-023"
+    ],
+    "SRC-R2-C4": [
+      "REQ-023"
+    ],
+    "SRC-CHAT-HOST-CONSOLIDATION": [
+      "REQ-023",
+      "REQ-024",
+      "REQ-045",
+      "REQ-046",
+      "REQ-047",
+      "REQ-052"
+    ],
+    "SRC-CHAT-STACK-SELECT": [
+      "REQ-023",
+      "REQ-052",
+      "REQ-053",
+      "REQ-054"
+    ],
+    "SRC-R2-C5": [
+      "REQ-024"
+    ],
+    "SRC-R2-C6": [
+      "REQ-024"
+    ],
+    "SRC-R1-C5": [
+      "REQ-028"
+    ],
+    "SRC-R2-C9": [
+      "REQ-029",
+      "REQ-030"
+    ],
+    "SRC-CHAT-DOCS": [
+      "REQ-030",
+      "REQ-031"
+    ],
+    "SRC-CHAT-TIME-TRAVEL": [
+      "REQ-033",
+      "REQ-034",
+      "REQ-035",
+      "REQ-036",
+      "REQ-037",
+      "REQ-038",
+      "REQ-039",
+      "REQ-047",
+      "REQ-049",
+      "REQ-054"
+    ],
+    "SRC-CHAT-HYBRID-STACK": [
+      "REQ-048",
+      "REQ-049",
+      "REQ-050"
+    ],
+    "SRC-CHAT-SUPABASE-LIMITS": [
+      "REQ-048",
+      "REQ-050"
+    ],
+    "SRC-CHAT-NO-BILLING": [
+      "REQ-051",
+      "REQ-052",
+      "REQ-054"
+    ]
+  }
+}
