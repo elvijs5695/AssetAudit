@@ -1,7 +1,7 @@
-import {SupabaseAPI} from './api.js?v=0.3.4';
-import {esc,dec2,fromDec2,formatMoney,formatQty,localYear,icon,debounce} from './util.js?v=0.3.4';
-import {parseCatalogueXlsx} from './xlsx.js?v=0.3.4';
-const APP_VERSION='0.3.4';
+import {SupabaseAPI} from './api.js?v=0.3.6';
+import {esc,dec2,fromDec2,formatMoney,formatQty,localYear,icon,debounce} from './util.js?v=0.3.6';
+import {parseCatalogueXlsx} from './xlsx.js?v=0.3.6';
+const APP_VERSION='0.3.6';
 const root=document.getElementById('app');
 const currentYear=localYear();
 const years=Array.from({length:11},(_,i)=>currentYear+1-i);
@@ -12,7 +12,7 @@ const unitLabel=v=>({'gabali':'gab.','komplekti':'kompl.','metri':'m','kg':'kg'}
 const unitChoices=units.map(v=>({value:v,label:unitLabel(v)}));
 const compactMoney=v=>v==null?'-':'€'+money(v).replace(/\s*€$/u,'');
 const autocompleteOff='autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true"';
-const nav=[['entry','Datu ievade','edit'],['inventory','Preču saraksts','list'],['catalogue','Katalogs','box'],['stats','Statistika','chart'],['admin','Administrācija','settings']];
+const nav=[['entry','Datu ievade','edit'],['scanner','Savienojums','phone'],['inventory','Preču saraksts','list'],['catalogue','Katalogs','box'],['stats','Statistika','chart'],['admin','Administrācija','settings']];
 const safeNum=(v)=>String(v??'').trim().replace(',','.');
 const money=(v)=>formatMoney(v);
 const inputMoney=v=>v===null||v===undefined||v===''?'':Number(String(v).replace(',','.')).toFixed(2);
@@ -30,9 +30,18 @@ class InventoryApp{
   this.section='entry';this.year=currentYear;this.config={active_year:currentYear,year_closed:false};this.search='';this.cash='';this.inventorySort='recent';this.catalogueSort='alpha';this.inventoryUser='';this.userCounts={};this.statsCash='';this.offset=0;this.invPageSize=50;this.catPageSize=50;this.expandedRow=-1;this.expandedDetails=[];this.inlineHistory={};this.xlsxRows=[];this.xlsxPreview=null;this.xlsxFileName='';this.nextYearPreview=null;this.modalStack=[];this.daily=[];
   this.catalogue=[];this.inventory=[];this.entryResults=[];this.entryQuery='';this.entryDraft={code:'',name:'',barcode:'',quantity:'1.00',unit:'gabali',invoice_price:'',shelf_price:'',cash:'1.stāvs',note:''};this.entryRequestId=null;this.entrySeq=0;this.entryCatalogueOpen=false;this.entrySearchEnabled=true;this.entrySearchState='idle';this.entryNoMatchAwaitNext=false;this.entryUnitManual=false;this.scanSource='entry';this.detail=null;this.stats=null;this.users=[];this.userStatusFilter='all';this.modal=null;this.suggest=[];this.busy=false;this.scanner=null;this.flash='';
   this.navHistoryReady=false;this.navigationSequence=0;this.lastSavedEntry=null;this.highlightEntryId=null;this.spotlightPending=false;
-  this.entryRecentRows=[];this.entryRecentError=false;this.entryRecentLimit=10;
+  this.entryRecentError=false;this.entryRecentLimit=10;
+  this.entryRecentEnabled=window.innerWidth>=1180;
+  this.entryInitialRows=[];this.entrySessionRows=new Map();this.entryFeedHead=null;this.entryFeedCursor=null;
+  this.entryRecentPulse=new Set();this.entryFeedBusy=false;this.entryPollTimer=null;this.entryFeedYear=null;
+  this.inventoryViewSnapshot=null;this.inventorySeenCursor=0;this.inventoryMarkerYear=null;
+  this.spotlightTimer=null;
+  this.desktopPairId=null;this.desktopPairBusy=false;this.desktopPairWarningShown=false;this.mobilePairId=null;this.mobilePairBusy=false;this.mobileSendBusy=false;this.remoteScanner=null;this.remoteScannerTimer=null;this.mobileScanMessage='';
   this.dailyChartObserver=null;this.dailyChartRows=[];this.dailyChartWidth=0;
   window.addEventListener('popstate',e=>this.onBrowserBack(e));
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&this.section==='entry'&&this.entryRecentEnabled)this.pollEntryFeed().catch(()=>{});});
+  this.entryPollTimer=setInterval(()=>{if(!document.hidden&&this.section==='entry'&&this.entryRecentEnabled)this.pollEntryFeed().catch(()=>{});},8000);
+  this.pairPollTimer=setInterval(()=>{if(!document.hidden&&this.me){if(this.desktopPairId)this.pollDesktopPair().catch(()=>{});if(this.section==='scanner')this.pollMobilePair().catch(()=>{});}},1800);
   this.debouncedSearch=debounce(()=>this.section==='entry'?this.lookupEntry():this.loadSection(true),380);
   root.addEventListener('click',e=>this.click(e));root.addEventListener('focusout',e=>this.blur(e));root.addEventListener('submit',e=>{if(e.target.id==='quick-entry-form'){e.preventDefault();this.saveQuickEntry().catch(err=>this.toast(err.message,'error'))}else if(e.target.id==='user-form'){e.preventDefault();this.saveUser().catch(err=>this.toast(err.message,'error'))}});root.addEventListener('change',e=>this.change(e));root.addEventListener('input',e=>this.input(e));root.addEventListener('keydown',e=>{if(e.key==='Escape'&&this.modal)this.closeModal();if((e.key==='Enter'||e.key===' ')&&e.target.matches('tr.group-row[data-action=details]')){e.preventDefault();e.target.click()}});
  }
@@ -49,7 +58,8 @@ async boot(){
   }else this.login();
  }
  login(message='',email=''){
-  this.modal=null;this.stopScan();this.modalStack=[];
+  this.entryFeedHead=null;this.entryFeedCursor=null;this.entryFeedYear=null;this.entryInitialRows=[];this.entrySessionRows.clear();this.inventoryViewSnapshot=null;
+  this.modal=null;this.stopScan();this.stopRemoteScanner();this.desktopPairId=null;this.mobilePairId=null;this.modalStack=[];
   root.innerHTML=`<div class="login-screen"><section class="login-form-area"><div class="login-form"><h1>Inventarizācija</h1>${message?`<div role="alert" class="notice error">${esc(message)}</div>`:''}${!this.api.configured?`<div class="notice error">Supabase konfigurācija nav pieejama.</div>`:''}<form id="login-form" class="layout-stack" novalidate><div class="form-field"><label for="login-email">E-pasts</label><input class="field" id="login-email" type="email" autocomplete="username" autocapitalize="none" spellcheck="false" value="${esc(email)}" required></div><div class="form-field"><label for="login-pass">Parole</label><input class="field" id="login-pass" type="password" autocomplete="current-password" required></div><button class="btn primary block" type="submit" ${!this.api.configured?'disabled':''}>Pieslēgties</button></form></div></section></div>`;
   root.querySelector('#login-form')?.addEventListener('submit',e=>{e.preventDefault();this.loginNow()});
   root.querySelector('#login-email')?.focus();
@@ -89,13 +99,23 @@ async boot(){
   // Keep a history entry for every app section, not a full page navigation.
   const target=new URL(location.href);target.hash='section='+encodeURIComponent(this.section);
   history.replaceState({assetAuditSection:this.section},'',target);
-  try{const value=Number(localStorage.getItem('entry_recent_limit_'+this.me.id));if([5,10,20,50].includes(value))this.entryRecentLimit=value;}catch{}
+  try{
+   const value=Number(localStorage.getItem('entry_recent_limit_'+this.me.id));
+   if([5,10,20,50].includes(value))this.entryRecentLimit=value;
+   const on=localStorage.getItem('entry_recent_enabled_'+this.me.id);
+   if(on!==null)this.entryRecentEnabled=on==='1';
+  }catch{}
   this.navHistoryReady=true;
  }
  async navigateSection(id,{fromHistory=false,searchOverride=null}={}){
-  if(!nav.some(([name])=>name===id)||(id==='admin'||id==='stats')&&!this.isAdmin)return;
+  if(!nav.some(([name])=>name===id)||(id==='admin'||id==='stats')&&!this.isAdmin||(id==='scanner'&&!window.matchMedia('(max-width:700px)').matches))return;
   if(this.section==='entry')this.readQuickDraft();
-  if(id!=='inventory'&&this.section==='inventory'){this.lastSavedEntry=null;this.highlightEntryId=null;this.spotlightPending=false;}
+  if(this.section==='scanner'&&id!=='scanner'){this.stopRemoteScanner();this.mobilePairId=null;}
+  if(this.section==='entry'&&id!=='entry'&&this.desktopPairId){const old=this.desktopPairId;this.desktopPairId=null;this.api.remoteScannerCancel(old).catch(()=>{});} 
+  if(id!=='inventory'&&this.section==='inventory'){
+   this.lastSavedEntry=null;this.highlightEntryId=null;this.spotlightPending=false;
+   this.inventoryViewSnapshot=null;this.inventoryMarkerYear=null;
+  }
   this.section=id;this.search=searchOverride!==null?String(searchOverride):'';this.cash='';this.offset=0;this.expandedRow=-1;this.expandedDetails=[];this.inlineHistory={};
   if(!fromHistory&&this.navHistoryReady){const target=new URL(location.href);target.hash='section='+encodeURIComponent(id);history.pushState({assetAuditSection:id},'',target)}
   const seq=++this.navigationSequence;
@@ -110,9 +130,9 @@ async boot(){
   if(this.modal){this.modal=null;this.modalStack=[];this.stopScan();this.renderModal()}
   if(next&&next!==this.section)this.navigateSection(next,{fromHistory:true}).catch(e=>this.toast(e.message,'error'));
  }
- navButton(id,title,ico){return `<button class="nav-item ${this.section===id?'active':''}" data-action="nav" data-id="${id}" aria-current="${this.section===id?'page':'false'}"><span class="nav-icon">${icon(ico)}</span><span class="nav-label">${title}</span></button>`}
+ navButton(id,title,ico){return `<button class="nav-item ${this.section===id?'active':''}" data-action="nav" data-id="${id}" aria-current="${this.section===id?'page':'false'}"><span class="nav-icon">${icon(ico)}</span><span class="nav-label">${id==='admin'&&window.matchMedia('(max-width:700px)').matches?'Admin.':title}</span></button>`}
 shell(){
-  const selected=nav.filter(n=>this.isAdmin||!['stats','admin'].includes(n[0]));
+  const selected=nav.filter(n=>(this.isAdmin||!['stats','admin'].includes(n[0]))&&(n[0]!=='scanner'||window.matchMedia('(max-width:700px)').matches));
   const title=nav.find(n=>n[0]===this.section)?.[1]||'Inventarizācija';
   root.innerHTML=`<div class="shell"><aside class="sidebar"><div class="brand"><strong>Inventarizācija</strong></div><nav aria-label="Galvenā navigācija">${selected.map(n=>this.navButton(...n)).join('')}</nav><div class="sidebar-spacer"></div><div class="side-year">Inventarizācija: <strong>${esc(this.config.active_year)}${this.config.year_closed?' · noslēgta':''}</strong></div><div class="side-user"><div class="side-user-main"><strong>${esc(this.me?.display_name||'Lietotājs')}</strong><span>${this.isAdmin?'Administrators':'Lietotājs'}</span></div><button class="icon-btn side-logout" data-action="logout" title="Iziet" aria-label="Iziet">${icon('logout')}</button></div></aside><main class="main"><header class="topbar"><h1>${esc(title)}</h1><div class="top-actions"><span class="small-status">Pieslēgts</span>${this.section==='entry'?'':`<button class="btn secondary" data-action="refresh" title="Pārlādēt datus" aria-label="Pārlādēt datus">${icon('refresh',18)}</button>`}</div></header><div id="workspace"></div></main><div class="mobile-nav" style="--nav-count:${selected.length}" aria-label="Mobilā navigācija">${selected.map(n=>this.navButton(...n)).join('')}</div></div><div id="overlay-host"></div><div class="toast-holder" id="toast-host"></div>`;
  }
@@ -122,8 +142,27 @@ shell(){
  }
  async loadSection(keepInput=false){
   try{
-   if(this.section==='entry'){this.shell();this.displaySection();await this.loadEntryRecent();if(this.entrySearchEnabled&&this.entryCatalogueOpen&&this.entryHasSufficientQuery()&&this.current)await this.lookupEntry();return;}
-   if(this.section==='inventory'){if(this.isAdmin&&!this.users.length)this.users=(await this.api.adminUsers()).users||[];if(!this.isAdmin)this.year=Number(this.config.active_year);this.inventory=await this.api.inventoryList({year:Number(this.year),search:this.search,cash:this.cash,sort:this.inventorySort,user:this.inventoryUser,limit:this.invPageSize,offset:this.offset});}
+   if(this.section==='scanner'){
+    this.shell();this.displaySection();await this.pollMobilePair();return;
+   }
+   if(this.section==='entry'){
+    this.shell();this.displaySection();
+    await this.loadEntryRecent();
+    if(this.entryRecentEnabled)await this.pollEntryFeed();
+    if(this.entrySearchEnabled&&this.entryCatalogueOpen&&this.entryHasSufficientQuery()&&this.current)await this.lookupEntry();
+    return;
+   }
+   if(this.section==='inventory'){
+    if(this.isAdmin&&!this.users.length)this.users=(await this.api.adminUsers()).users||[];
+    if(!this.isAdmin)this.year=Number(this.config.active_year);
+    if(this.inventoryViewSnapshot===null||this.inventoryMarkerYear!==Number(this.year)){
+     const marker=await this.api.inventoryViewState(Number(this.year));
+     this.inventorySeenCursor=Number(marker.seen_feed_id||0);
+     this.inventoryViewSnapshot=Number(marker.snapshot_feed_id||0);
+     this.inventoryMarkerYear=Number(this.year);
+    }
+    this.inventory=await this.api.inventoryList({year:Number(this.year),search:this.search,cash:this.cash,sort:this.inventorySort,user:this.inventoryUser,limit:this.invPageSize,offset:this.offset});
+   }
    else if(this.section==='catalogue')this.catalogue=await this.api.catalogueSearchSorted(this.search,this.offset,this.catPageSize,this.catalogueSort);
    else if(this.section==='stats'&&this.isAdmin){
     this.stats=await this.api.adminStats(this.year,this.statsCash);
@@ -135,39 +174,203 @@ shell(){
      if(idx!==-1){this.expandedRow=idx;this.expandedDetails=await this.api.inventoryDetails(this.inventory[idx],this.year,'');this.highlightEntryId=this.lastSavedEntry.entryId;this.spotlightPending=false;}
    }
    this.shell();this.displaySection();
-   if(this.section==='inventory'&&this.highlightEntryId){const el=root.querySelector('[data-entry-id="'+this.highlightEntryId+'"]')||root.querySelector('.newly-added');el?.scrollIntoView({block:'center',behavior:'auto'});}
+   if(this.section==='inventory'&&this.spotlightPending===false&&this.highlightEntryId)this.pulseInventorySpotlight();
    if(keepInput){const f=root.querySelector('#search-input');if(f){f.focus();f.setSelectionRange(f.value.length,f.value.length)}}
   }catch(e){this.shell();this.displaySection();this.toast(e.message,'error')}
  }
   displaySection(){const host=root.querySelector('#workspace');if(!host)return;
   if(this.dailyChartObserver){this.dailyChartObserver.disconnect();this.dailyChartObserver=null;}
   this.dailyChartWidth=0;
-  host.innerHTML=this.banners()+(this.section==='entry'?this.entryView():this.section==='inventory'?this.inventoryView():this.section==='catalogue'?this.catalogueView():this.section==='stats'?this.statsView():this.adminView());
+  host.innerHTML=this.banners()+(this.section==='entry'?this.entryView():this.section==='scanner'?this.scannerView():this.section==='inventory'?this.inventoryView():this.section==='catalogue'?this.catalogueView():this.section==='stats'?this.statsView():this.adminView());
   if(this.section==='stats')this.observeDailyChart();
  }
- // Inventory list RPC is already server-sorted, scoped by year and limited to the requested count.
- // A failed read must not prevent staff from recording inventory.
+ // Fixed initial snapshot and a separate, append-only session collection.
+ // The record-count selector applies only to the starting snapshot, never to session arrivals.
+ async ensureEntryFeed(){
+  const year=Number(this.config.active_year);
+  if(this.entryFeedHead!==null&&this.entryFeedYear===year)return;
+  this.entryFeedYear=year;
+  this.entryFeedHead=Number(await this.api.inventoryFeedHead(year));
+  this.entryFeedCursor=this.entryFeedHead;
+  this.entrySessionRows=new Map();
+  await this.loadEntryRecent();
+ }
  async loadEntryRecent(){
-  try{this.entryRecentRows=await this.api.inventoryList({year:Number(this.config.active_year),search:'',cash:'',sort:'recent',user:'',limit:this.entryRecentLimit,offset:0});this.entryRecentError=false;}
-  catch{this.entryRecentRows=[];this.entryRecentError=true;}
-  const target=root.querySelector('#entry-recent-items');if(target)target.innerHTML=this.entryRecentBody();
+  if(!this.entryRecentEnabled)return;
+  try{
+   if(this.entryFeedHead===null||this.entryFeedYear!==Number(this.config.active_year)){
+    const year=Number(this.config.active_year);
+    this.entryFeedYear=year;
+    this.entryFeedHead=Number(await this.api.inventoryFeedHead(year));
+    this.entryFeedCursor=this.entryFeedHead;
+    this.entrySessionRows=new Map();
+   }
+   this.entryInitialRows=await this.api.inventoryFeedPage(Number(this.config.active_year),{before:this.entryFeedHead,limit:this.entryRecentLimit,ascending:false});
+   this.entryRecentError=false;
+  }catch{
+   this.entryRecentError=true;
+  }
+  this.renderEntryRecent();
  }
+ async pollEntryFeed(){
+  if(!this.entryRecentEnabled||this.entryFeedBusy||this.entryFeedHead===null)return;
+  this.entryFeedBusy=true;
+  const year=Number(this.config.active_year);
+  const newIds=[];
+  try{
+   // Page through all committed additions in small bounded requests. No desktop refresh needed.
+   for(let page=0;page<100;page++){
+    const batch=await this.api.inventoryFeedPage(year,{after:this.entryFeedCursor,limit:200,ascending:true});
+    if(!Array.isArray(batch)||!batch.length)break;
+    for(const row of batch){
+     const id=Number(row.feed_id);
+     if(!Number.isSafeInteger(id)||id<=this.entryFeedCursor)continue;
+     this.entryFeedCursor=id;
+     this.entrySessionRows.set(id,row);
+     if(row.action!=='void')newIds.push(id);
+    }
+    if(batch.length<200)break;
+   }
+   this.entryRecentError=false;
+   if(newIds.length){newIds.forEach(x=>this.entryRecentPulse.add(x));this.renderEntryRecent();}
+  }catch{this.entryRecentError=true;this.renderEntryRecent();}
+  finally{this.entryFeedBusy=false;}
+  if(newIds.length){
+   setTimeout(()=>{
+    for(const id of newIds)this.entryRecentPulse.delete(id);
+    root.querySelectorAll('.entry-recent-table tr.is-pulsing').forEach(el=>el.classList.remove('is-pulsing'));
+   },2000);
+  }
+ }
+ get entryRecentRows(){
+  const combined=new Map();
+  for(const r of this.entryInitialRows||[])combined.set(Number(r.feed_id),r);
+  for(const [id,r] of this.entrySessionRows)combined.set(id,r);
+  return [...combined.values()].filter(r=>r.action!=='void').sort((a,b)=>Number(b.feed_id)-Number(a.feed_id));
+ }
+ renderEntryRecent(){const target=root.querySelector('#entry-recent-items');if(target)target.innerHTML=this.entryRecentBody();}
  entryRecentBody(){
-  if(this.entryRecentError)return '<div class="lookup-empty" role="status">Neizdevās ielādēt pēdējos ierakstus. Inventarizācijas ievade joprojām ir pieejama.</div>';
+  if(this.entryRecentError&&this.entryRecentRows.length===0)return '<div class="lookup-empty" role="status">Neizdevās ielādēt pēdējos ierakstus. Inventarizācijas ievade joprojām ir pieejama.</div>';
   if(!this.entryRecentRows.length)return '<div class="lookup-empty">Šajā gadā vēl nav ievadītu preču.</div>';
-  return `<div class="table-wrap always-visible"><table class="data-table entry-recent-table"><thead><tr><th>Kods</th><th>Nosaukums</th><th class="right">Daudzums</th><th>Mērv.</th><th class="right">PZ cena</th><th class="right">PL cena</th><th>Kase</th><th></th></tr></thead><tbody>${this.entryRecentRows.map((r,i)=>`<tr><td class="mono recent-code" title="${eattr(r.code||'')}">${esc(r.code||'—')}</td><td class="recent-name" title="${eattr(r.name)}">${esc(r.name)}</td><td class="right mono">${formatQty(r.quantity)}</td><td>${esc(unitLabel(r.unit))}</td><td class="right mono">${money(r.invoice_price)}</td><td class="right mono">${r.shelf_price==null?'-':money(r.shelf_price)}</td><td>${esc(cashLabel(r.cash))}</td><td><button type="button" class="btn small secondary" data-action="open-recent-entry" data-i="${i}" aria-label="Apskatīt ${eattr(r.name)} preču sarakstā">Apskatīt</button></td></tr>`).join('')}</tbody></table></div>`;
+  return `<div class="table-wrap always-visible"><table class="data-table entry-recent-table"><thead><tr><th>Kods</th><th>Nosaukums</th><th>Svītrkods</th><th class="right">Daudzums</th><th>Mērv.</th><th class="right">PZ cena</th><th class="right">PL cena</th><th>Kase</th><th></th></tr></thead><tbody>${this.entryRecentRows.map((r,i)=>`<tr data-feed-id="${eattr(r.feed_id)}" class="${this.entryRecentPulse.has(Number(r.feed_id))?'is-pulsing':''}"><td class="mono recent-code" title="${eattr(r.code||'')}">${esc(r.code||'—')}</td><td class="recent-name" title="${eattr(r.name)}">${esc(r.name)}</td><td class="mono recent-barcode" title="${eattr(r.barcode||'')}">${esc(r.barcode||'—')}</td><td class="right mono">${formatQty(r.quantity)}</td><td>${esc(unitLabel(r.unit))}</td><td class="right mono">${money(r.invoice_price)}</td><td class="right mono">${r.shelf_price==null?'-':money(r.shelf_price)}</td><td>${esc(cashLabel(r.cash))}</td><td><button type="button" class="btn small secondary" data-action="open-recent-entry" data-i="${i}" aria-label="Apskatīt ${eattr(r.name)} preču sarakstā">Apskatīt</button></td></tr>`).join('')}</tbody></table></div>`;
  }
- entryRecentView(){return `<section class="card entry-recent" aria-label="Pēdējās inventarizācijas pozīcijas"><div class="entry-recent-head"><h2>Pēdējie preču saraksta ieraksti</h2><label class="entry-recent-limit">Rādīt <select id="entry-recent-count" class="field" aria-label="Pēdējo ierakstu skaits">${options([5,10,20,50],this.entryRecentLimit)}</select></label></div><div id="entry-recent-items">${this.entryRecentBody()}</div></section>`;}
-entryView(){
+ entryRecentView(){return `<section class="card entry-recent" ${!this.entryRecentEnabled?'hidden':''} aria-label="Pēdējās inventarizācijas pozīcijas"><div class="entry-recent-head"><h2>Pēdējie preču saraksta ieraksti</h2><label class="entry-recent-limit">Sākotnējie <select id="entry-recent-count" class="field" aria-label="Sākotnējo ierakstu skaits">${options([5,10,20,50],this.entryRecentLimit)}</select></label></div><div id="entry-recent-items">${this.entryRecentBody()}</div></section>`;}
+scannerView(){
+  const linked=!!this.mobilePairId;
+  return `<section class="card remote-scanner-page"><div class="remote-scanner-head">${icon('phone',26)}<div><h2>Telefona skeneris</h2><p>${linked?'Savienots ar šī lietotāja desktop ievadi.':'Savienojums pašlaik nav aktivizēts desktopā.'}</p></div></div>${linked?`<div class="remote-scanner-video" id="remote-scanner-video"><video id="remote-video" autoplay muted playsinline></video><div class="barcode-target"></div></div><div class="remote-scanner-controls"><button type="button" class="btn secondary" data-action="remote-start-camera">${icon('scan',16)} Ieslēgt kameru</button><div class="form-field"><label for="remote-manual-barcode">Svītrkods (manuāli)</label><div class="field-row"><input class="field" id="remote-manual-barcode" inputmode="text" ${autocompleteOff} maxlength="100" placeholder="Ievadi svītrkodu"><button type="button" class="btn primary" data-action="remote-send-manual">Nosūtīt</button></div></div></div>`:`<div class="notice info remote-scanner-idle">Desktopā pie svītrkoda lauka nospied telefona ikonu. Kad tā kļūs zaļa, šeit varēsi skenēt.</div>`}<p class="remote-scan-status" id="remote-scan-status" role="status">${esc(this.mobileScanMessage)}</p></section>`;
+ }
+ updateDesktopPairButton(){
+  const button=root.querySelector('.remote-desktop-btn');if(!button)return;
+  button.classList.toggle('is-active',!!this.desktopPairId);
+  button.setAttribute('aria-pressed',this.desktopPairId?'true':'false');
+  const title=this.desktopPairId?'Pārtraukt telefona savienojumu':'Savienot telefona skeneri';
+  button.title=title;button.setAttribute('aria-label',title);
+  button.disabled=this.desktopPairBusy;
+ }
+ async toggleDesktopPair(){
+  if(this.desktopPairBusy)return;
+  this.desktopPairBusy=true;this.updateDesktopPairButton();
+  try{
+   if(this.desktopPairId){const old=this.desktopPairId;this.desktopPairId=null;await this.api.remoteScannerCancel(old);this.toast('Telefona savienojums pārtraukts');}
+   else{
+    const id=crypto.randomUUID();await this.api.remoteScannerActivate(id);this.desktopPairWarningShown=false;
+    if(this.section!=='entry'){await this.api.remoteScannerCancel(id);return;}
+    this.desktopPairId=id;this.toast('Telefona skeneris aktivizēts uz 5 minūtēm');
+   }
+  }finally{this.desktopPairBusy=false;this.updateDesktopPairButton()}
+ }
+ async pollDesktopPair(){
+  if(!this.desktopPairId||this.desktopPairBusy)return;
+  const id=this.desktopPairId;
+  this.desktopPairBusy=true;
+  try{
+   const r=await this.api.remoteScannerReceive(id);
+   this.desktopPairWarningShown=false;
+   if(this.desktopPairId!==id)return;
+   if(r?.status==='closed'){this.desktopPairId=null;this.updateDesktopPairButton();this.toast('Telefona skenera savienojums beidzies');}
+   else if(r?.status==='received'){
+    this.desktopPairId=null;this.updateDesktopPairButton();
+    const barcode=String(r.barcode||'').trim();
+    if(barcode&&this.section==='entry'){
+     this.readQuickDraft();this.fillQuickDraft({barcode});
+     try{await this.handleBarcodeLookup(barcode)}catch(e){this.toast(e.message||'Kataloga meklēšana neizdevās','error')}
+     this.toast('Svītrkods saņemts no telefona');
+    }
+   }
+  }catch(e){if(this.desktopPairId===id&&!this.desktopPairWarningShown){this.desktopPairWarningShown=true;this.toast('Neizdevās pārbaudīt telefona savienojumu; mēģināšu atkārtoti.','warn')}}
+  finally{this.desktopPairBusy=false;this.updateDesktopPairButton()}
+ }
+ async pollMobilePair(){
+  if(this.section!=='scanner'||this.mobilePairBusy||!this.me)return;
+  this.mobilePairBusy=true;
+  try{
+   const rows=await this.api.remoteScannerMobileState();
+   if(this.section!=='scanner')return;
+   const next=rows?.[0]?.request_id||null;
+   if(next!==this.mobilePairId){
+    this.stopRemoteScanner();this.mobilePairId=next;
+    if(next)this.mobileScanMessage='Skenē pirmo svītrkodu. Pēc nosūtīšanas savienojums aizvērsies.';
+    this.displaySection();
+    if(next)this.startRemoteScanner().catch(()=>{});
+   }
+  }catch(e){if(this.section==='scanner')this.setMobileScanMessage('Savienojumu pašlaik nevar pārbaudīt. Mēģināšu atkārtoti.')}
+  finally{this.mobilePairBusy=false}
+ }
+ stopRemoteScanner(){
+  if(this.remoteScannerTimer)clearTimeout(this.remoteScannerTimer);
+  this.remoteScannerTimer=null;
+  const s=this.remoteScanner;this.remoteScanner=null;
+  if(s?.stream)s.stream.getTracks().forEach(t=>t.stop());
+ }
+ async startRemoteScanner(){
+  const id=this.mobilePairId;
+  if(this.section!=='scanner'||!id||this.remoteScanner)return;
+  const box=root.querySelector('#remote-scanner-video'),video=root.querySelector('#remote-video');
+  if(!box||!video)return;
+  if(!navigator.mediaDevices?.getUserMedia||!('BarcodeDetector' in window)){
+   this.setMobileScanMessage('Automātiska kameras skenēšana šajā pārlūkā nav pieejama. Ievadi svītrkodu manuāli.');return;
+  }
+  try{
+   const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+   if(this.section!=='scanner'||this.mobilePairId!==id){stream.getTracks().forEach(t=>t.stop());return;}
+   const scanner={id,stream,active:true};this.remoteScanner=scanner;
+   video.srcObject=stream;await video.play();
+   const detector=new BarcodeDetector({formats:['ean_13','ean_8','code_128','code_39','upc_a','upc_e','itf']});
+   const scan=async()=>{
+    if(this.remoteScanner!==scanner||this.mobilePairId!==id||this.section!=='scanner')return;
+    try{
+     const found=await detector.detect(video);
+     if(found[0]?.rawValue){await this.remoteSendCode(found[0].rawValue);return}
+    }catch(e){if(e?.message&&!this.remoteScanner)return;}
+    if(this.remoteScanner===scanner)this.remoteScannerTimer=setTimeout(scan,200);
+   };scan();
+  }catch{this.stopRemoteScanner();this.setMobileScanMessage('Kamera nav pieejama. Pārbaudi atļaujas vai ievadi svītrkodu manuāli.')}
+ }
+ setMobileScanMessage(value){this.mobileScanMessage=value;const el=root.querySelector('#remote-scan-status');if(el)el.textContent=value;}
+ async remoteSendCode(value){
+  const id=this.mobilePairId,code=String(value||'').trim();
+  if(!id||this.mobileSendBusy||!code)return;
+  this.stopRemoteScanner();
+  this.mobileSendBusy=true;
+  try{
+   const ok=await this.api.remoteScannerSend(id,code);
+   if(this.mobilePairId!==id)return;
+   this.mobilePairId=null;
+   this.mobileScanMessage=ok?'Svītrkods nosūtīts desktopam. Savienojums aizvērts.':'Savienojums beidzies. Aktivizē to vēlreiz desktopā.';
+   this.displaySection();
+  }catch(e){this.mobileScanMessage=e.message;this.mobilePairId=null;this.displaySection()}
+  finally{this.mobileSendBusy=false}
+ }
+ entryView(){
   const x=this.entryDraft,disabled=!this.current?'disabled':'';
   const searchInput=(id,label,value,placeholder,maxlength)=>`<div class="form-field search-entry-field"><label for="${id}">${esc(label)}</label><div class="clearable-input"><input class="field" id="${id}" value="${eattr(value)}" placeholder="${esc(placeholder)}" maxlength="${maxlength}" ${autocompleteOff} ${disabled}><button class="clear-entry-field" type="button" data-action="clear-entry-field" data-field="${id}" title="Notīrīt ${esc(label.toLowerCase())}" aria-label="Notīrīt ${esc(label.toLowerCase())}" ${disabled}>${icon('close',14)}</button></div></div>`;
   return `<div class="entry-workspace">
     <section class="entry-search-sticky card" aria-label="Preces meklēšana un ievade">
       <div class="entry-heading"><h2>Preces identificēšana</h2><div class="entry-heading-actions"><label class="search-switch" title="Ieslēgt vai izslēgt kataloga meklēšanu"><input type="checkbox" role="switch" aria-label="Meklēt katalogā" id="entry-search-toggle" ${this.entrySearchEnabled?'checked':''} ${disabled}><span>Meklēt katalogā</span></label></div></div>
-      <div class="entry-search-fields">${searchInput('e-code','Preces kods',x.code,'Kods',50)}${searchInput('e-name','Nosaukums *',x.name,'Nosaukums',200)}<div class="form-field search-entry-field"><label for="e-barcode">Svītrkods</label><div class="clearable-input barcode-search"><input class="field" id="e-barcode" value="${eattr(x.barcode)}" maxlength="100" ${autocompleteOff} inputmode="numeric" placeholder="Svītrkods" ${disabled}><button class="clear-entry-field" type="button" data-action="clear-entry-field" data-field="e-barcode" aria-label="Notīrīt svītrkodu" ${disabled}>${icon('close',14)}</button><button class="btn secondary scan-sticky" type="button" data-action="scan-entry" ${disabled}>${icon('scan',17)} Skenēt</button></div></div></div>
+      <div class="entry-search-fields">${searchInput('e-code','Preces kods',x.code,'Kods',50)}${searchInput('e-name','Nosaukums *',x.name,'Nosaukums',200)}<div class="form-field search-entry-field"><label for="e-barcode">Svītrkods</label><div class="clearable-input barcode-search"><span class="barcode-input-wrap"><input class="field" id="e-barcode" value="${eattr(x.barcode)}" maxlength="100" ${autocompleteOff} inputmode="numeric" placeholder="Svītrkods" ${disabled}><button class="clear-entry-field" type="button" data-action="clear-entry-field" data-field="e-barcode" aria-label="Notīrīt svītrkodu" ${disabled}>${icon('close',14)}</button></span><button class="btn secondary remote-desktop-btn ${this.desktopPairId?'is-active':''}" type="button" data-action="toggle-remote-scanner" aria-pressed="${this.desktopPairId?'true':'false'}" title="${this.desktopPairId?'Pārtraukt telefona savienojumu':'Aktivizēt skenēšanu no telefona'}" aria-label="${this.desktopPairId?'Pārtraukt telefona savienojumu':'Savienot telefona skeneri'}" ${disabled}>${icon('phone',18)}</button><button class="btn secondary scan-sticky" type="button" data-action="scan-entry" ${disabled}>${icon('scan',17)} Skenēt</button></div></div></div>
     </section>
     <section class="card entry-catalogue" id="entry-catalogue-panel" ${!this.entryCatalogueOpen||!this.entrySearchEnabled?'hidden':''} aria-label="Kataloga meklēšanas rezultāti"><header class="entry-catalogue-heading"><h2>Kataloga rezultāti</h2></header><div class="entry-results" id="entry-results" role="status" aria-live="polite">${this.renderEntryResults()}</div></section>
-    <section class="card entry-form"><form id="quick-entry-form" autocomplete="off" novalidate><div class="entry-heading"><h2>Inventarizācijas ieraksts</h2></div><fieldset ${disabled} class="entry-fieldset"><div class="entry-fields">
+    <section class="card entry-form"><form id="quick-entry-form" autocomplete="off" novalidate><div class="entry-heading"><h2>Inventarizācijas ieraksts</h2><label class="entry-recent-toggle"><input type="checkbox" id="entry-recent-enabled" ${this.entryRecentEnabled?'checked':''}><span>Rādīt pēdējos ierakstus</span></label></div><fieldset ${disabled} class="entry-fieldset"><div class="entry-fields">
       <div class="form-field entry-price"><label for="e-pz">Pavadzīmes cena, € *</label><div class="clearable-input"><input class="field" id="e-pz" ${autocompleteOff} inputmode="decimal" value="${eattr(inputMoney(x.invoice_price))}"><button class="clear-entry-field" type="button" data-action="clear-entry-field" data-field="e-pz" aria-label="Notīrīt pavadzīmes cenu">${icon('close',14)}</button></div></div>
       <div class="form-field entry-price"><label for="e-pl">Plaukta cena, € *</label><div class="clearable-input"><input class="field" id="e-pl" ${autocompleteOff} inputmode="decimal" value="${eattr(inputMoney(x.shelf_price))}"><button class="clear-entry-field" type="button" data-action="clear-entry-field" data-field="e-pl" aria-label="Notīrīt plaukta cenu">${icon('close',14)}</button></div></div>
       <div class="form-field entry-quantity"><div class="qty-labels"><label for="e-qty">Daudzums *</label><label for="e-unit">Mērvienība</label></div><div class="qty-row"><div class="qty-control"><button type="button" class="qty-btn qty-minus" data-action="qty-minus" aria-label="Samazināt daudzumu">−</button><input class="field qty-input" id="e-qty" ${autocompleteOff} inputmode="decimal" value="${eattr(x.quantity)}"><button type="button" class="qty-btn qty-plus" data-action="qty-plus" aria-label="Palielināt daudzumu">+</button></div><select class="field entry-unit-select" id="e-unit">${options(unitChoices,x.unit)}</select></div></div>
@@ -230,15 +433,28 @@ entryView(){
   const pz=this.entryDraft.invoice_price,pl=this.entryDraft.shelf_price;
   f.textContent=(['0','0.0','0.00','0,0','0,00'].includes(pz)||['0','0.0','0.00','0,0','0,00'].includes(pl))?'Uzmanību: cena ir 0,00 €.':'';
  }
-inventoryView(){return `<div class="layout-stack"><div class="toolbar"><div class="search-field">${icon('search',18)}<input id="search-input" ${autocompleteOff} placeholder="Kods un/vai nosaukums" value="${eattr(this.search)}" aria-label="Meklēt ievadītās preces"></div><select class="field" id="cash-select" aria-label="Kase">${options(cashFilter,this.cash)}</select><select class="field" id="inventory-sort" aria-label="Kārtojums">${options([{value:'recent',label:'Pēdējie pievienotie'},{value:'alpha',label:'Pēc alfabēta'}],this.inventorySort)}</select>${this.isAdmin?`<select class="field" id="inventory-user" aria-label="Ieraksta autors">${options([{value:'',label:'Visi lietotāji'},...this.users.map(u=>({value:u.id,label:u.display_name||u.email_address}))],this.inventoryUser)}</select>`:''}<label class="page-size">Rindas lapā <select class="field" id="inventory-page-size">${options([25,50,100],this.invPageSize)}</select></label></div>${this.inventoryTable()}</div>`}
+inventoryView(){return `<div class="layout-stack"><div class="toolbar"><div class="search-field">${icon('search',18)}<input id="search-input" ${autocompleteOff} placeholder="Kods, nosaukums vai svītrkods" value="${eattr(this.search)}" aria-label="Meklēt ievadītās preces pēc koda, nosaukuma vai svītrkoda"></div><select class="field" id="cash-select" aria-label="Kase">${options(cashFilter,this.cash)}</select><select class="field" id="inventory-sort" aria-label="Kārtojums">${options([{value:'recent',label:'Pēdējie pievienotie'},{value:'alpha',label:'Pēc alfabēta'}],this.inventorySort)}</select>${this.isAdmin?`<select class="field" id="inventory-user" aria-label="Ieraksta autors">${options([{value:'',label:'Visi lietotāji'},...this.users.map(u=>({value:u.id,label:u.display_name||u.email_address}))],this.inventoryUser)}</select>`:''}<label class="page-size">Rindas lapā <select class="field" id="inventory-page-size">${options([25,50,100],this.invPageSize)}</select></label></div><div class="inventory-unread-toolbar"><span class="inventory-unread-explain">Gaiši zaļā krāsā — kopš pēdējās atzīmes pievienotie ieraksti.</span><button type="button" class="btn small secondary" data-action="mark-inventory-seen" ${this.inventoryViewSnapshot<=this.inventorySeenCursor?'disabled':''}>Atzīmēt visus ierakstus kā apskatītus</button></div>${this.inventoryTable()}</div>`}
  groupIsHighlighted(g){const h=this.lastSavedEntry;return !!(h&&h.year===Number(this.year)&&String(g.code||'')===String(h.code||'')&&g.name===h.name&&dec2(g.invoice_price)===dec2(h.invoice_price)&&dec2(g.shelf_price)===dec2(h.shelf_price)&&g.cash===h.cash&&g.unit===h.unit)}
+ groupIsUnread(g){return typeof g.has_unread==='boolean'?g.has_unread:Number(g.last_feed_id||0)>Number(this.inventorySeenCursor||0);}
+ pulseInventorySpotlight(){
+  const id=this.highlightEntryId;
+  const groupIndex=this.inventory.findIndex(g=>this.groupIsHighlighted(g));
+  const el=root.querySelector('[data-entry-id="'+id+'"]')||(groupIndex>=0?root.querySelector('.group-row[data-i="'+groupIndex+'"]'):null);
+  if(el){el.scrollIntoView({block:'center',behavior:'auto'});el.classList.add('spotlight-once');
+    if(groupIndex>=0)root.querySelector('.compact-mobile-row[data-i="'+groupIndex+'"]')?.classList.add('spotlight-once');
+    clearTimeout(this.spotlightTimer);this.spotlightTimer=setTimeout(()=>{
+      root.querySelectorAll('.spotlight-once').forEach(n=>n.classList.remove('spotlight-once'));
+      this.highlightEntryId=null;this.lastSavedEntry=null;
+    },1750);
+  }else{this.highlightEntryId=null;this.lastSavedEntry=null;}
+ }
  detailsMarkup(){const arr=this.expandedDetails||[],g=this.inventory[this.expandedRow];
-  return `<div class="expanded-wrap"><div class="expanded-title">Atsevišķās ievades (${arr.length})</div><div class="detail-grid">${arr.map((d,i)=>`<div class="detail-record ${d.entry_id===this.highlightEntryId?'newly-added':''}" data-entry-id="${eattr(d.entry_id)}"><div class="detail-inline"><span class="detail-code mono" title="${eattr(g?.code||'')}">${esc(g?.code||'—')}</span><span class="detail-name" title="${eattr(g?.name||'')}">${esc(g?.name||'Prece')}</span><span class="detail-qty mono">${formatQty(d.quantity)} ${esc(unitLabel(d.unit))}</span><span class="detail-total mono">${money(d.invoice_total)}</span><span class="detail-cash">${esc(cashLabel(g?.cash||''))}</span><span class="detail-author" title="${eattr((d.author_name||'Nav norādīts')+' · '+dateLV(d.recorded_at)+(d.note?' · '+d.note:''))}">${esc(d.author_name||'Nav norādīts')} · ${dateLV(d.recorded_at)}${d.note?' · '+esc(d.note):''}</span><div class="detail-actions">${this.current?`<button class="btn small secondary" data-action="edit-inline-entry" data-i="${i}">${icon('edit',14)} Labot</button><button class="btn small danger" data-action="void-inline-entry" data-i="${i}" title="Anulēt">${icon('trash',14)}<span class="detail-action-caption">Anulēt</span></button>`:''}${this.isAdmin?`<button class="btn small secondary history-toggle" data-action="history-inline-entry" data-i="${i}" aria-expanded="${!!this.inlineHistory[d.entry_id]}" aria-label="${this.inlineHistory[d.entry_id]?'Sakļaut':'Izvērst'} ieraksta vēsturi">${icon('clock',14)} <span class="history-toggle-text">Vēsture</span><span class="history-toggle-chevron">${icon('chevron',13)}</span></button>`:''}</div></div>${this.inlineHistory[d.entry_id]?`<div class="detail-history">${this.historyMarkup(this.inlineHistory[d.entry_id])}</div>`:''}</div>`).join('')}</div></div>`;
+  return `<div class="expanded-wrap"><div class="expanded-title">Atsevišķās ievades (${arr.length})</div><div class="detail-grid">${arr.map((d,i)=>`<div class="detail-record" data-entry-id="${eattr(d.entry_id)}"><div class="detail-inline"><span class="detail-code mono" title="${eattr(g?.code||'')}">${esc(g?.code||'—')}</span><span class="detail-name" title="${eattr(g?.name||'')}">${esc(g?.name||'Prece')}</span><span class="detail-qty mono">${formatQty(d.quantity)} ${esc(unitLabel(d.unit))}</span><span class="detail-total mono">${money(d.invoice_total)}</span><span class="detail-cash">${esc(cashLabel(g?.cash||''))}</span><span class="detail-author" title="${eattr((d.author_name||'Nav norādīts')+' · '+dateLV(d.recorded_at)+(d.barcode?' · Svītrkods: '+d.barcode:'')+(d.note?' · '+d.note:''))}">${esc(d.author_name||'Nav norādīts')} · ${dateLV(d.recorded_at)}${d.note?' · '+esc(d.note):''}</span><div class="detail-actions">${this.current?`<button class="btn small secondary" data-action="edit-inline-entry" data-i="${i}">${icon('edit',14)} Labot</button><button class="btn small danger" data-action="void-inline-entry" data-i="${i}" title="Anulēt">${icon('trash',14)}<span class="detail-action-caption">Anulēt</span></button>`:''}${this.isAdmin?`<button class="btn small secondary history-toggle" data-action="history-inline-entry" data-i="${i}" aria-expanded="${!!this.inlineHistory[d.entry_id]}" aria-label="${this.inlineHistory[d.entry_id]?'Sakļaut':'Izvērst'} ieraksta vēsturi">${icon('clock',14)} <span class="history-toggle-text">Vēsture</span><span class="history-toggle-chevron">${icon('chevron',13)}</span></button>`:''}</div></div>${this.inlineHistory[d.entry_id]?`<div class="detail-history">${this.historyMarkup(this.inlineHistory[d.entry_id])}</div>`:''}</div>`).join('')}</div></div>`;
  }
  historyMarkup(items){return (items||[]).map(r=>`<div class="history-record" role="row" title="${eattr((r.code||'')+' '+(r.name||'')+' '+(r.note||''))}"><span class="history-action" title="Notikuma tips">${esc(actionLV[r.action]||r.action||'Izmaiņa')}</span><span class="history-date" title="${eattr(dateLV(r.recorded_at))} · ${eattr(r.author_name||'Nav norādīts')}">${esc(dateCompactLV(r.recorded_at))}</span><span class="history-author" title="${eattr(r.author_name||'Nav norādīts')}">${esc(r.author_name||'—')}</span><span class="history-qty mono" title="Daudzums">${formatQty(r.quantity)} ${esc(unitLabel(r.unit))}</span><span class="history-money mono" title="Pavadzīmes un plaukta cena">${money(r.invoice_price)} / ${r.shelf_price==null?'-':money(r.shelf_price)}</span><span class="history-cash" title="Kase">${esc(cashLabel(r.cash||''))}</span><span class="history-note" title="${eattr(r.note||'')}">${esc(r.note||'')}</span></div>`).join('')||'<p>Vēsture nav pieejama.</p>'}
  inventoryTable(){const arr=Array.isArray(this.inventory)?this.inventory:[];
-  const rows=arr.map((r,i)=>`<tr class="group-row ${this.expandedRow===i?'expanded':''} ${this.groupIsHighlighted(r)?'newly-added':''}" data-action="details" data-i="${i}" role="button" tabindex="0" aria-expanded="${this.expandedRow===i}"><td class="expand-cell"><span class="expand-icon">${icon('chevron',15)}</span></td><td class="code mono">${esc(r.code||'—')}</td><td class="name-cell" title="${eattr(r.name)}">${esc(r.name)}</td><td class="right mono">${formatQty(r.quantity)}</td><td>${esc(unitLabel(r.unit))}</td><td class="right mono">${money(r.invoice_price)}</td><td class="right mono">${money(r.shelf_price)}</td><td class="right mono">${money(r.invoice_total)}</td><td class="right mono">${money(r.shelf_total)}</td><td class="cash-cell">${esc(cashLabel(r.cash))}</td></tr>${this.expandedRow===i?`<tr class="details-row"><td colspan="10">${this.detailsMarkup()}</td></tr>`:''}`).join('');
-  return `<section class="card"><div class="panel-title"><h2>Ievadītās preces</h2><span class="tag">${this.year}. gads</span></div>${arr.length?`<div class="table-wrap"><table class="data-table inventory-table"><colgroup><col style="width:30px"><col style="width:126px"><col><col style="width:88px"><col style="width:72px"><col style="width:96px"><col style="width:96px"><col style="width:108px"><col style="width:108px"><col style="width:112px"></colgroup><thead><tr><th aria-label="Izvērst"></th><th>ID / kods</th><th>Nosaukums</th><th class="right">Daudzums</th><th>Vien.</th><th class="right">PZ cena</th><th class="right">PL cena</th><th class="right">PZ summa</th><th class="right">PL summa</th><th>Kase</th></tr></thead><tbody>${rows}</tbody></table></div><div class="mobile-rows"><div class="mobile-list">${arr.map((r,i)=>`<div><button class="mobile-card compact-mobile-row ${this.groupIsHighlighted(r)?'newly-added':''}" data-action="details" data-i="${i}" aria-expanded="${this.expandedRow===i}"><span class="compact-code mono">${esc(r.code||'—')}</span><span class="compact-name" title="${eattr(r.name)}">${esc(r.name)}</span><span class="compact-qty mono">${formatQty(r.quantity)} ${esc(unitLabel(r.unit))}</span><span class="compact-money mono">${money(r.invoice_price)} / ${money(r.shelf_price)}</span><span class="compact-chevron">${icon('chevron',13)}</span></button>${this.expandedRow===i?this.detailsMarkup():''}</div>`).join('')}</div></div>`:`<div class="empty-state"><strong>Šajā atlasē nav ierakstu.</strong></div>`}<div class="table-footer"><span>${arr.length?this.offset+1:0}–${this.offset+arr.length} (rādītas ${arr.length})</span><div class="field-row"><button class="btn secondary small" data-action="page-prev" ${this.offset===0?'disabled':''}>Iepriekšējā</button><button class="btn secondary small" data-action="page-next" ${arr.length<this.invPageSize?'disabled':''}>Nākamā ${icon('chevron',15)}</button></div></div></section>`;
+  const rows=arr.map((r,i)=>`<tr class="group-row ${this.expandedRow===i?'expanded':''} ${this.groupIsUnread(r)?'is-unread':''}" data-action="details" data-i="${i}" role="button" tabindex="0" aria-expanded="${this.expandedRow===i}"><td class="expand-cell"><span class="expand-icon">${icon('chevron',15)}</span></td><td class="code mono">${esc(r.code||'—')}</td><td class="name-cell" title="${eattr(r.name)}">${esc(r.name)}</td><td class="code mono barcode-cell" title="${eattr(r.barcode||'')}">${esc(r.barcode||'—')}</td><td class="right mono">${formatQty(r.quantity)}</td><td>${esc(unitLabel(r.unit))}</td><td class="right mono">${money(r.invoice_price)}</td><td class="right mono">${money(r.shelf_price)}</td><td class="right mono">${money(r.invoice_total)}</td><td class="right mono">${money(r.shelf_total)}</td><td class="cash-cell">${esc(cashLabel(r.cash))}</td></tr>${this.expandedRow===i?`<tr class="details-row"><td colspan="11">${this.detailsMarkup()}</td></tr>`:''}`).join('');
+  return `<section class="card"><div class="panel-title"><h2>Ievadītās preces</h2><span class="tag">${this.year}. gads</span></div>${arr.length?`<div class="table-wrap"><table class="data-table inventory-table"><colgroup><col style="width:30px"><col style="width:108px"><col><col style="width:140px"><col style="width:88px"><col style="width:72px"><col style="width:96px"><col style="width:96px"><col style="width:108px"><col style="width:108px"><col style="width:112px"></colgroup><thead><tr><th aria-label="Izvērst"></th><th>ID / kods</th><th>Nosaukums</th><th>Svītrkods</th><th class="right">Daudzums</th><th>Vien.</th><th class="right">PZ cena</th><th class="right">PL cena</th><th class="right">PZ summa</th><th class="right">PL summa</th><th>Kase</th></tr></thead><tbody>${rows}</tbody></table></div><div class="mobile-rows"><div class="mobile-list">${arr.map((r,i)=>`<div><button class="mobile-card compact-mobile-row ${this.groupIsUnread(r)?'is-unread':''}" data-action="details" data-i="${i}" aria-expanded="${this.expandedRow===i}"><span class="compact-code mono">${esc(r.code||'—')}</span><span class="compact-name" title="${eattr(r.name)}">${esc(r.name)}</span><span class="compact-barcode mono" title="${eattr(r.barcode||'')}">${esc(r.barcode||'—')}</span><span class="compact-qty mono">${formatQty(r.quantity)} ${esc(unitLabel(r.unit))}</span><span class="compact-money mono">${money(r.invoice_price)} / ${money(r.shelf_price)}</span><span class="compact-chevron">${icon('chevron',13)}</span></button>${this.expandedRow===i?this.detailsMarkup():''}</div>`).join('')}</div></div>`:`<div class="empty-state"><strong>Šajā atlasē nav ierakstu.</strong></div>`}<div class="table-footer"><span>${arr.length?this.offset+1:0}–${this.offset+arr.length} (rādītas ${arr.length})</span><div class="field-row"><button class="btn secondary small" data-action="page-prev" ${this.offset===0?'disabled':''}>Iepriekšējā</button><button class="btn secondary small" data-action="page-next" ${arr.length<this.invPageSize?'disabled':''}>Nākamā ${icon('chevron',15)}</button></div></div></section>`;
  }
  catalogueView(){const arr=Array.isArray(this.catalogue)?this.catalogue:[];return `<div class="layout-stack"><div class="toolbar"><div class="search-field">${icon('search',18)}<input id="search-input" ${autocompleteOff} value="${eattr(this.search)}" placeholder="Kods un/vai nosaukums, svītrkods" aria-label="Meklēt preču katalogā"></div><select class="field" id="catalogue-sort" aria-label="Kataloga kārtojums">${options([{value:'alpha',label:'Pēc alfabēta'},{value:'recent',label:'Pēdējie pievienotie'}],this.catalogueSort)}</select><label class="page-size">Rindas lapā <select class="field" id="catalogue-page-size">${options([25,50,100],this.catPageSize)}</select></label>${this.isAdmin?`<button class="btn secondary" data-action="xlsx-import">${icon('upload',17)} Pievienot kataloga preces no faila</button><button class="btn primary" data-action="new-cat">${icon('plus')} Jauna prece</button>`:''}</div><div class="card"><div class="panel-title"><h2>Preču katalogs</h2></div>${arr.length?`<div class="table-wrap"><table class="data-table catalogue-table"><colgroup><col style="width:128px"><col><col style="width:95px"><col style="width:95px"><col style="width:178px"><col style="width:115px"><col style="width:69px"><col style="width:80px"></colgroup><thead><tr><th>Kods</th><th>Nosaukums</th><th class="right">PZ cena</th><th class="right">PL cena</th><th>Svītrkods</th><th>Mērvienība</th><th>Gads</th><th></th></tr></thead><tbody>${arr.map((r,i)=>`<tr><td class="code mono">${esc(r.code||'—')}</td><td class="name-cell">${esc(r.name)}</td><td class="right mono">${money(r.invoice_price)}</td><td class="right mono">${r.shelf_price==null?'-':money(r.shelf_price)}</td><td class="mono">${esc(r.barcode||'—')}</td><td>${esc(unitLabel(r.unit)||'—')}</td><td>${esc(r.source_year||'—')}</td><td><button class="row-action" data-action="${this.isAdmin?'edit-cat':'see-cat'}" data-i="${i}">${this.isAdmin?'Labot':'Skatīt'}</button></td></tr>`).join('')}</tbody></table></div><div class="mobile-rows"><div class="mobile-list">${arr.map((r,i)=>`<button class="mobile-card compact-mobile-row catalogue-mobile-row" data-action="${this.isAdmin?'edit-cat':'see-cat'}" data-i="${i}"><span class="compact-code mono">${esc(r.code||'—')}</span><span class="compact-name" title="${eattr(r.name)}">${esc(r.name)}</span><span class="compact-money mono">${compactMoney(r.invoice_price)} | ${compactMoney(r.shelf_price)}</span><span class="compact-year mono">${esc(r.source_year??'—')}</span><span class="compact-chevron">${icon('chevron',13)}</span></button>`).join('')}</div></div>`:`<div class="empty-state"><strong>Nav atrastu preču</strong><span>Mēģiniet citu nosaukumu vai kodu.</span></div>`}<div class="table-footer"><span>${arr.length?this.offset+1:0}–${this.offset+arr.length} (rādītas ${arr.length})</span><div class="field-row"><button class="btn secondary small" data-action="page-prev" ${this.offset===0?'disabled':''}>Iepriekšējā</button><button class="btn secondary small" data-action="page-next" ${arr.length<this.catPageSize?'disabled':''}>Nākamā ${icon('chevron',15)}</button></div></div></div></div>`;}
  dailyLineMarkup(rows){
@@ -366,17 +582,29 @@ inventoryView(){return `<div class="layout-stack"><div class="toolbar"><div clas
  setBusy(b){this.busy=b;root.querySelectorAll('[data-action="save-entry"],[data-action="save-cat"],[data-action="confirmed-password"],#user-form button[type=submit],#quick-entry-form button[type=submit]').forEach(x=>x.disabled=b)}
  async click(e){const btn=e.target.closest('[data-action]');if(!btn)return;const action=btn.dataset.action;try{
    if(action==='nav'){if(this.busy)return;await this.navigateSection(btn.dataset.id)}
-   else if(action==='logout'){await this.api.logout();this.me=null;this.login()}
+   else if(action==='logout'){const pair=this.desktopPairId;this.desktopPairId=null;if(pair)await this.api.remoteScannerCancel(pair).catch(()=>{});this.stopRemoteScanner();await this.api.logout();this.me=null;this.login()}
    else if(action==='refresh'){await this.loadSection();this.toast('Dati atjaunoti')}
    else if(action==='new-entry'){await this.navigateSection('entry')}
+   else if(action==='toggle-remote-scanner'){await this.toggleDesktopPair()}
+   else if(action==='remote-start-camera'){await this.startRemoteScanner()}
+   else if(action==='remote-send-manual'){const value=root.querySelector('#remote-manual-barcode')?.value||'';await this.remoteSendCode(value)}
    else if(action==='details'){const i=Number(btn.dataset.i);if(this.expandedRow===i){this.expandedRow=-1;this.expandedDetails=[];}else{const g=this.inventory[i];if(!g)return;this.expandedDetails=await this.api.inventoryDetails(g,this.year,this.inventoryUser);this.expandedRow=i;this.inlineHistory={};}this.displaySection()}
    else if(action==='new-cat'){if(!this.isAdmin)return;this.showModal({type:'catalogue',edit:false,data:{shelf_price:null}})}
    else if(action==='edit-cat'||action==='see-cat'){const d=this.catalogue[Number(btn.dataset.i)];if(d)this.showModal({type:'catalogue',edit:action==='edit-cat',readonly:action==='see-cat',data:d})}
    else if(action==='page-next'||action==='page-prev'){const size=this.section==='inventory'?this.invPageSize:this.catPageSize;this.offset=Math.max(0,this.offset+(action==='page-next'?size:-size));this.expandedRow=-1;this.expandedDetails=[];await this.loadSection()}
    else if(action==='close'){this.closeModal()}
    else if(action==='continue-entry'){this.closeModal()}
-   else if(action==='view-saved-entry'){this.closeModal();this.inventorySort='recent';this.inventoryUser='';this.year=Number(this.config.active_year);await this.navigateSection('inventory',{searchOverride:this.lastSavedEntry?.code||this.lastSavedEntry?.name||''})}
-   else if(action==='open-recent-entry'){const g=this.entryRecentRows[Number(btn.dataset.i)];if(!g)return;this.lastSavedEntry={entryId:null,year:Number(this.config.active_year),code:g.code,name:g.name,invoice_price:g.invoice_price,shelf_price:g.shelf_price,cash:g.cash,unit:g.unit};this.highlightEntryId=null;this.spotlightPending=true;this.inventorySort='recent';this.inventoryUser='';this.year=Number(this.config.active_year);await this.navigateSection('inventory',{searchOverride:g.code||g.name||''})}
+   else if(action==='view-saved-entry'){this.closeModal();if(this.lastSavedEntry?.entryId){try{await this.api.inventoryMarkOneSeen(Number(this.config.active_year),this.lastSavedEntry.entryId)}catch{this.toast('Neizdevās saglabāt konkrētā ieraksta apskates atzīmi.','warn')}}this.inventorySort='recent';this.inventoryUser='';this.year=Number(this.config.active_year);await this.navigateSection('inventory',{searchOverride:this.lastSavedEntry?.code||this.lastSavedEntry?.name||''})}
+   else if(action==='mark-inventory-seen'){
+    if(this.section!=='inventory'||this.inventoryViewSnapshot===null)return;
+    const seen=await this.api.inventoryMarkSeen(Number(this.year),this.inventoryViewSnapshot);
+    this.inventorySeenCursor=Math.max(this.inventorySeenCursor,Number(seen||0));
+    // Re-read has_unread from the database: it is group-level aggregation and
+    // cannot be recomputed safely from the group's latest feed ID alone.
+    await this.loadSection();
+    this.toast('Apskates atzīme saglabāta. Jaunākie ieraksti paliek neapskatīti.');
+   }
+   else if(action==='open-recent-entry'){const g=this.entryRecentRows[Number(btn.dataset.i)];if(!g)return;this.lastSavedEntry={entryId:g.entry_id,year:Number(this.config.active_year),code:g.code,name:g.name,invoice_price:g.invoice_price,shelf_price:g.shelf_price,cash:g.cash,unit:g.unit};this.highlightEntryId=null;this.spotlightPending=true;try{await this.api.inventoryMarkOneSeen(Number(this.config.active_year),g.entry_id)}catch{this.toast('Neizdevās saglabāt konkrētā ieraksta apskates atzīmi.','warn')}this.inventorySort='recent';this.inventoryUser='';this.year=Number(this.config.active_year);await this.navigateSection('inventory',{searchOverride:g.code||g.name||''})}
    else if(action==='history-entry'){const d=this.modal?.items?.[Number(btn.dataset.i)];if(d&&this.isAdmin){const rows=await this.api.adminHistory(d.entry_id);this.showModal({type:'history',heading:'Inventarizācijas ieraksta vēsture',items:rows})}}
    else if(action==='history-cat'){const d=this.modal?.data;if(d&&this.isAdmin){const rows=await this.api.adminCatalogueHistory(d.item_id);this.modalStack.push(this.modal);this.showModal({type:'history',heading:'Kataloga izmaiņu vēsture',items:rows})}}
    else if(action==='edit-entry'){const d=this.modal?.items?.[Number(btn.dataset.i)],g=this.modal?.group;if(!d||!g)return;this.showModal({type:'entry',edit:true,data:{...g,...d,quantity:d.quantity,barcode:d.barcode||''}})}
@@ -436,8 +664,15 @@ inventoryView(){return `<div class="layout-stack"><div class="toolbar"><div clas
  }
  async saveUser(){if(this.busy)return;const d=this.modal.data,m=this.modal,g=id=>root.querySelector('#'+id)?.value.trim()??'';const password=root.querySelector('#u-password')?.value||'';const email=g('u-email');if(!m.edit){if(!email)throw Error('Ievadiet e-pastu');if(!/^\S+@\S+\.\S+$/.test(email))throw Error('Ievadiet derīgu e-pasta adresi');}if((!m.edit||password)&& (password.length<8||password.length>128))throw Error('Parolei jābūt 8–128 rakstzīmju garai');const payload=m.edit?{id:d.id,display_name:g('u-name'),role:g('u-role'),active:!!root.querySelector('#u-active')?.checked,...(password?{password}:{})}:{email,password,display_name:g('u-name'),role:g('u-role')};this.setBusy(true);try{const res=await this.api.adminUsers(m.edit?'PATCH':'POST',payload);this.closeModal();await this.loadSection();this.toast(res.message||'Saglabāts')}finally{this.setBusy(false)}}
 change(e){
-  if(e.target.id==='view-year-select'&&this.section==='admin'&&this.isAdmin){this.year=Number(e.target.value);try{localStorage.setItem('inventory_view_year_'+this.me.id,String(this.year))}catch{}this.offset=0;this.expandedRow=-1;this.expandedDetails=[];this.search='';this.loadSection();return}
+  if(e.target.id==='view-year-select'&&this.section==='admin'&&this.isAdmin){this.year=Number(e.target.value);this.inventoryViewSnapshot=null;this.inventoryMarkerYear=null;try{localStorage.setItem('inventory_view_year_'+this.me.id,String(this.year))}catch{}this.offset=0;this.expandedRow=-1;this.expandedDetails=[];this.search='';this.loadSection();return}
   if(e.target.id==='entry-recent-count'){const size=Number(e.target.value);if(![5,10,20,50].includes(size))return;this.entryRecentLimit=size;try{localStorage.setItem('entry_recent_limit_'+this.me.id,String(size))}catch{}this.loadEntryRecent();return;}
+  if(e.target.id==='entry-recent-enabled'){
+   this.readQuickDraft();this.entryRecentEnabled=e.target.checked;
+   try{localStorage.setItem('entry_recent_enabled_'+this.me.id,this.entryRecentEnabled?'1':'0')}catch{}
+   const panel=root.querySelector('.entry-recent');if(panel)panel.hidden=!this.entryRecentEnabled;
+   if(this.entryRecentEnabled)this.loadEntryRecent().then(()=>this.pollEntryFeed());
+   return;
+  }
   if(e.target.id==='entry-search-toggle'){this.readQuickDraft();this.entrySearchEnabled=e.target.checked;this.entrySeq++;this.entryNoMatchAwaitNext=false;if(this.entrySearchEnabled)this.handleEntrySearchChange({clearing:true});else{this.entryCatalogueOpen=false;this.entrySearchState='idle';this.updateEntryResults()}return}
   if(e.target.id==='e-unit'){this.entryUnitManual=true;this.readQuickDraft();this.entryRequestId=null;return}
   if(e.target.id==='inventory-sort'){this.inventorySort=e.target.value;this.offset=0;this.expandedRow=-1;this.loadSection();return}
@@ -528,7 +763,10 @@ change(e){
    this.entryRequestId=null;
    const cash=d.cash,unit=d.unit,quantity=q,name=d.name.trim();
    this.fillQuickDraft({code:'',name:'',barcode:'',quantity:'1.00',unit,invoice_price:'',shelf_price:'',cash,note:''});
-   this.entryQuery='';this.entryResults=[];this.entryCatalogueOpen=false;this.entrySearchEnabled=true;this.entrySearchState='idle';this.entryNoMatchAwaitNext=false;this.entryUnitManual=false;this.entrySeq++;this.updateEntryResults();const toggle=root.querySelector('#entry-search-toggle');if(toggle)toggle.checked=true;await this.loadEntryRecent();this.showModal({type:'quick-entry-success',name,quantity,unit,cash});
+   this.entryQuery='';this.entryResults=[];this.entryCatalogueOpen=false;this.entrySearchEnabled=true;this.entrySearchState='idle';this.entryNoMatchAwaitNext=false;this.entryUnitManual=false;this.entrySeq++;this.updateEntryResults();const toggle=root.querySelector('#entry-search-toggle');if(toggle)toggle.checked=true;if(this.entryRecentEnabled){
+     await this.pollEntryFeed();
+     if(this.entryRecentError)this.toast('Ieraksts saglabāts, bet jaunāko ierakstu paneli neizdevās atjaunināt.','warn');
+    }else this.showModal({type:'quick-entry-success',name,quantity,unit,cash});
   }finally{this.setBusy(false)}
  }
 

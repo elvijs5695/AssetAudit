@@ -563,3 +563,92 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 /* v0.3.4: familiar one-arrow refresh icon with restrained green affordance */
 .top-actions button[data-action="refresh"]{color:#1c7550;background:#eff9f3;border:1px solid #c8e5d3;min-width:41px;min-height:41px;padding:8px}
 .top-actions button[data-action="refresh"]:hover{background:#e3f3e9;color:#115e3e}
+
+/* v0.3.5 — compact dynamic activity, barcode cells and per-user unread state. */
+.entry-recent[hidden]{display:none!important}
+.entry-recent-toggle{display:inline-flex;align-items:center;gap:6px;font-size:.76rem;font-weight:500;color:#617887;white-space:nowrap;margin-left:auto;cursor:pointer}
+.entry-recent-toggle input{width:17px;height:17px;accent-color:#356984;cursor:pointer}
+/* Render the latest panel on any screen when explicitly selected; allow horizontal table scroll on phones. */
+.entry-workspace>.entry-recent:not([hidden]){display:block;min-width:0}
+@media(min-width:1180px){.entry-workspace>.entry-recent:not([hidden]){grid-column:1/-1;grid-row:3}}
+.entry-recent-table{min-width:960px}
+.entry-recent-table th:nth-child(1){width:100px}
+.entry-recent-table th:nth-child(2){width:auto}
+.entry-recent-table th:nth-child(3){width:132px}
+.entry-recent-table th:nth-child(4){width:92px}
+.entry-recent-table th:nth-child(5){width:65px}
+.entry-recent-table th:nth-child(6),.entry-recent-table th:nth-child(7){width:100px}
+.entry-recent-table th:nth-child(8){width:90px}
+.entry-recent-table th:nth-child(9){width:94px}
+.entry-recent-table td{min-width:0}
+/* Table titles no longer press against card borders. */
+.inventory-table{min-width:1260px!important;max-width:none!important}
+.inventory-table .barcode-cell{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.layout-stack>.card>.panel-title{padding:17px 20px 11px!important;margin:0!important}
+.entry-catalogue .entry-catalogue-heading{padding:12px 17px!important}
+.entry-catalogue .entry-results{background:#eef5fa}
+.entry-catalogue .compact-lookup{background:#f1f7fb;border-bottom-color:#dbe8f0}
+.entry-catalogue .compact-lookup:hover{background:#cbdfea!important}
+.entry-recent tbody tr:hover td,.inventory-table tbody tr:not(.details-row):hover td,.catalogue-table tbody tr:hover td{background:#d9e8f1!important}
+/* Ongoing unread is a restrained background, not an animation. */
+.inventory-table tr.group-row.is-unread>td,.mobile-card.compact-mobile-row.is-unread{background:#e6f5e9}
+.inventory-table tr.group-row.is-unread:hover>td,.mobile-card.compact-mobile-row.is-unread:hover{background:#d0ead6}
+.inventory-unread-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 2px 11px;flex-wrap:wrap}
+.inventory-unread-explain{font-size:.76rem;color:#71838c}
+.inventory-unread-toolbar .btn{white-space:normal}
+/* Pulse only when a record arrives or is opened; afterwards revert to its regular state. */
+@keyframes activityGreenPulse{0%{background-color:#c9eecf}25%{background-color:#a9dfb8}75%{background-color:#d4f4dc}100%{background-color:transparent}}
+.entry-recent-table tr.is-pulsing>td,.entry-recent-table tr.is-pulsing:hover>td{animation:activityGreenPulse 1.65s ease-out 1}
+@keyframes recordSpotlight{0%,28%{background-color:#b8ebc4}100%{background-color:#fff}}
+.inventory-table tr.spotlight-once>td,.inventory-table tr.spotlight-once:hover>td,.compact-mobile-row.spotlight-once,.detail-record.spotlight-once{animation:recordSpotlight 1.55s ease-out 1!important}
+@media (prefers-reduced-motion:reduce){.entry-recent-table tr.is-pulsing>td,.spotlight-once{animation:none!important}}
+/* Keep the barcode visible on mobile as a compact fixed-width code, with ellipsis. */
+.compact-mobile-row:not(.catalogue-mobile-row){grid-template-columns:minmax(35px,13%) minmax(0,1fr) minmax(48px,18%) auto 12px!important;gap:5px}
+.compact-mobile-row .compact-barcode{min-width:0;max-width:100%;font-size:.68rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#748794}
+@media(max-width:380px){.compact-mobile-row:not(.catalogue-mobile-row){grid-template-columns:35px minmax(0,1fr) minmax(38px,15%) auto 10px!important;gap:4px}.compact-mobile-row .compact-barcode{font-size:.61rem}}
+@media(max-width:700px){.layout-stack>.card>.panel-title{padding:10px 13px 6px!important}.inventory-unread-toolbar{padding:4px 0 9px;align-items:start}.entry-catalogue .entry-catalogue-heading{padding:8px 11px!important}}
+/* v0.3.5: identification and inventory entry are peer cards, equal height on desktop. */
+.entry-workspace>.entry-form.card{
+ border:1px solid #dce3e7!important;
+ border-radius:12px!important;
+ box-shadow:0 2px 5px #203d4b0b!important;
+ background:#fff!important;
+}
+@media(min-width:1180px){
+ .entry-workspace{align-items:stretch!important;grid-auto-rows:auto}
+ .entry-workspace>.entry-search-sticky,.entry-workspace>.entry-form{height:100%;align-self:stretch}
+ .entry-workspace>.entry-form>form{display:flex;flex-direction:column;min-height:100%}
+ .entry-workspace>.entry-form>form>.entry-fieldset{flex:1;display:flex;flex-direction:column}
+ .entry-workspace>.entry-form .entry-bottom{margin-top:auto}
+}
+
+/* v0.3.6 — desktop-to-phone one-shot barcode scanner. */
+.barcode-search{display:flex;align-items:stretch;gap:5px}
+.barcode-search .barcode-input-wrap{position:relative;flex:1 1 auto;min-width:0;display:block}
+.barcode-search .barcode-input-wrap .field{width:100%;height:100%;min-width:0;padding-right:30px}
+.barcode-search .barcode-input-wrap .clear-entry-field{right:5px}
+.remote-desktop-btn{display:none!important;align-items:center;justify-content:center;min-width:40px;max-width:40px;padding:7px!important;flex:0 0 40px;height:42px}
+.remote-desktop-btn.is-active{background:#25754c!important;color:#fff!important;border-color:#1c6240!important;box-shadow:0 0 0 2px #c5e9cf}
+.remote-desktop-btn.is-active:hover{background:#1c6240!important}
+@media(min-width:701px){.remote-desktop-btn{display:inline-flex!important}}
+.remote-scanner-page{padding:18px;max-width:580px;margin:0 auto;min-width:0}
+.remote-scanner-head{display:flex;align-items:center;gap:12px;margin-bottom:14px;color:#34596c}
+.remote-scanner-head h2{font-size:1.03rem;font-weight:650;margin:0 0 4px}
+.remote-scanner-head p{margin:0;font-size:.82rem;color:#6f8490}
+.remote-scanner-video{position:relative;background:#071c18;border-radius:9px;overflow:hidden;min-height:215px;display:grid;place-items:center}
+.remote-scanner-video video{width:100%;height:min(44dvh,340px);object-fit:cover;background:#0d2323;display:block}
+.remote-scanner-controls{display:flex;flex-direction:column;gap:14px;margin-top:12px}
+.remote-scanner-controls .form-field>.field-row{display:flex;gap:8px;min-width:0}
+.remote-scanner-controls .field-row input{min-width:0;flex:1}
+.remote-scanner-idle{margin:12px 0;color:#526b7a}
+.remote-scan-status{min-height:1.5em;color:#3b7656;font-size:.85rem;margin-top:12px}
+@media(max-width:700px){.remote-scanner-page{padding:14px 12px}.remote-scanner-head{gap:9px}}
+/* Keep one card boundary, not a second default fieldset outline. */
+.entry-form .entry-fieldset{border:0!important;padding:0!important;margin:0!important;min-width:0}
+/* Additional phone-only Scanner tab must never force a second navigation row. */
+@media(max-width:700px){
+ .mobile-nav{grid-template-columns:repeat(var(--nav-count,5),minmax(0,1fr))!important}
+ .mobile-nav .nav-item{min-width:0!important;max-width:100%;padding:2px 1px!important;gap:3px}
+ .mobile-nav .nav-label{font-size:.57rem!important;overflow-wrap:break-word;line-height:1.07}
+ .mobile-nav .nav-icon svg{width:19px;height:19px}
+}

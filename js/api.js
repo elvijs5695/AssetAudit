@@ -26,6 +26,8 @@ export class SupabaseAPI {
       if(auth&&auth!==false&&(data?.error_code==='session_not_found'||data?.code==='session_not_found'||/session from session_id claim in jwt does not exist/i.test(String(data?.msg||data?.message||'')))){this.session=null;this.store();const err=new Error('Iepriekšējā sesija ir atsaukta (piemēram, pēc paroles maiņas vai izrakstīšanās citā ierīcē). Pieslēdzieties vēlreiz.');err.status=401;err.code='session_not_found';throw err;}
       const error=data?.msg||data?.message||data?.error_description||data?.error||data?.hint||`Servera kļūda (${res.status})`;
       if((data?.code==='PGRST202'||data?.error_code==='PGRST202')&&/(catalogue_search_fields|catalogue_search_with_unit|catalogue_by_barcode_with_unit|catalogue_change_with_unit)/i.test(String(error))){const setup=new Error('Supabase datubāzē vēl nav migrācijas 007. Kataloga funkcijas nav pieejamas.');setup.code='MIGRATIONS_REQUIRED';throw setup;}
+      if((data?.code==='PGRST202'||data?.error_code==='PGRST202')&&/(remote_scanner_)/i.test(String(error))){const setup=new Error('Nepieciešama Supabase migrācija 012 attālinātajam svītrkoda skenerim.');setup.code='MIGRATIONS_REQUIRED';throw setup;}
+      if((data?.code==='PGRST202'||data?.error_code==='PGRST202')&&/(inventory_list_v035|inventory_feed_page|inventory_feed_head|inventory_view_state|inventory_mark_seen|inventory_mark_one_seen)/i.test(String(error))){const setup=new Error('Trūkst datubāzes migrācijas 011. Nepieciešama inventarizācijas saraksta un apskates atzīmju atjaunināšana.');setup.code='MIGRATIONS_REQUIRED';throw setup;}
       const ex=new Error(String(error));ex.status=res.status;ex.code=data?.error_code||data?.code||'';throw ex;
     }
     return data;
@@ -83,13 +85,23 @@ export class SupabaseAPI {
     return response[0];
   }
   async rpc(fn,body={}){return this.request('/rest/v1/rpc/'+fn,{method:'POST',body});}
-  async inventoryList({year,search='',cash='',sort='recent',user='',limit=50,offset=0}){return this.rpc('inventory_list_sorted',{p_year:year,p_search:search,p_cash:cash,p_sort:sort,p_user_id:user||null,p_limit:limit,p_offset:offset});}
+  async inventoryList({year,search='',cash='',sort='recent',user='',limit=50,offset=0}){return this.rpc('inventory_list_v035',{p_year:year,p_search:search,p_cash:cash,p_sort:sort,p_user_id:user||null,p_limit:limit,p_offset:offset});}
+  async inventoryViewState(year){const rows=await this.rpc('inventory_view_state',{p_year:year});return rows?.[0]||{seen_feed_id:0,snapshot_feed_id:0};}
+  async inventoryMarkSeen(year,snapshot){return this.rpc('inventory_mark_seen',{p_year:year,p_snapshot_feed_id:snapshot});}
+  async inventoryMarkOneSeen(year,id){return this.rpc('inventory_mark_one_seen',{p_year:year,p_entry_id:id});}
+  async inventoryFeedHead(year){return this.rpc('inventory_feed_head',{p_year:year});}
+  async inventoryFeedPage(year,{after=0,before=null,limit=50,ascending=true}={}){return this.rpc('inventory_feed_page',{p_year:year,p_after:after,p_before:before,p_limit:limit,p_ascending:ascending});}
   async inventoryDetails(group,year,user=''){return this.rpc(user?'inventory_details_by_user':'inventory_details_readable',{p_year:year,p_code:group.code,p_name:group.name,p_invoice_price:group.invoice_price,p_shelf_price:group.shelf_price,p_cash:group.cash,p_unit:group.unit,...(user?{p_user_id:user}:{})});}
   async catalogueSearch(search='',offset=0,limit=50){return this.rpc('catalogue_search_with_unit',{p_search:search,p_offset:offset,p_limit:limit});}
   async catalogueSearchSorted(search='',offset=0,limit=50,sort='alpha'){return this.rpc('catalogue_search_sorted',{p_search:search,p_offset:offset,p_limit:limit,p_sort:sort});}
   async adminUserCounts(year){return this.rpc('admin_user_entry_counts',{p_year:year});}
   async catalogueSearchFields({code='',name='',barcode}={}){return this.rpc('catalogue_search_fields',{p_code:code,p_name:name,p_barcode:barcode||'',p_limit:25});}
   async catalogueByBarcode(barcode){return this.rpc('catalogue_by_barcode_with_unit',{p_barcode:barcode});}
+  async remoteScannerActivate(requestId){return this.rpc('remote_scanner_activate',{p_request_id:requestId});}
+  async remoteScannerMobileState(){return this.rpc('remote_scanner_mobile_state',{});}
+  async remoteScannerSend(requestId,barcode){return this.rpc('remote_scanner_send',{p_request_id:requestId,p_barcode:barcode});}
+  async remoteScannerReceive(requestId){return this.rpc('remote_scanner_receive',{p_request_id:requestId});}
+  async remoteScannerCancel(requestId){return this.rpc('remote_scanner_cancel',{p_request_id:requestId});}
   async inventorySubmit(payload){return this.rpc('inventory_submit',payload);}
   async catalogueChange(payload){return this.rpc('catalogue_change_with_unit',payload);}
   async adminStats(year,cash=''){const r=await this.rpc('admin_stats_by_cash',{p_year:year,p_cash:cash});return r?.[0]||{};}
