@@ -57,7 +57,7 @@ export function icon(name,size=19){const paths={
   upload:'<path d="M12 16V3m-5 5 5-5 5 5M4 17v4h16v-4"/>',
   trash:'<path d="M4 7h16m-3 0-.8 14H7.8L7 7m3-3h4"/>',
   reload:'<path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.5 9A7.5 7.5 0 0 1 19.9 7L20 12M4 12l.1 5A7.5 7.5 0 0 0 18.5 15"/>',
-  refresh:'<path d="M20 7v5h-5M4 17v-5h5"/><path d="M5 9a8 8 0 0 1 14-2l1 5M4 12l1 5a8 8 0 0 0 14-2"/>',
+  refresh:'<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/>',
   arrow:'<path d="m5 12 14 0m-6-6 6 6-6 6"/>'
 };return `<svg aria-hidden="true" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths[name]||paths.info}</svg>`;}
 export function debounce(fn,ms=250){let id;return (...args)=>{clearTimeout(id);id=setTimeout(()=>fn(...args),ms);};}

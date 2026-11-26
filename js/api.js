@@ -111,7 +111,29 @@ export class SupabaseAPI {
     }return r;
   }
   async adminCatalogueBatch(rows,dry=true){return this.rpc('admin_catalogue_batch',{p_rows:rows,p_dry_run:dry});}
-  async adminCloseYear(year){return this.rpc('admin_close_year',{p_year:year});}
-  async adminPrepareNextYear(year,rows,dry=true){return this.rpc('admin_prepare_next_year',{p_year:year,p_rows:rows,p_dry_run:dry});}
+  async verifyYearPassword(action,password){
+    if(!['close_year','start_year'].includes(action)||!password)throw new Error('Ievadiet administratora paroli');
+    await this.refreshIfNeeded();
+    let res;
+    try{res=await fetch(this.url+'/functions/v1/year-operations',{
+      method:'POST',cache:'no-store',headers:{apikey:this.key,Authorization:'Bearer '+this.session.access_token,'Content-Type':'application/json'},
+      body:JSON.stringify({action,password})
+    });}catch{throw new Error('Paroles apstiprin\u0101\u0161anas pakalpojums nav sasniedzams');}
+    let data;try{data=await res.json();}catch{data={};}
+    if(!res.ok){if(res.status===404)throw new Error('Supabase funkcija year-operations nav izvietota');
+      if(res.status===403)throw new Error('Nepareiza parole vai nav administratora ties\u012bbu');
+      throw new Error(data.error||'Paroles apstiprin\u0101\u0161ana neizdev\u0101s');}
+    if(!/^[0-9a-f-]{36}$/i.test(data?.proof||''))throw new Error('Neder\u012bga paroles apstiprin\u0101\u0161ana');
+    return data.proof;
+  }
+  async adminCloseYear(year,password){
+    const proof=await this.verifyYearPassword('close_year',password);
+    return this.rpc('admin_close_year_verified',{p_year:year,p_proof:proof});
+  }
+  async adminPrepareNextYear(year,rows,dry=true,password=''){
+    if(dry)return this.rpc('admin_prepare_next_year_preview',{p_year:year,p_rows:rows});
+    const proof=await this.verifyYearPassword('start_year',password);
+    return this.rpc('admin_prepare_next_year_verified',{p_year:year,p_rows:rows,p_proof:proof});
+  }
   async logout(){try{if(this.session?.access_token)await this.request('/auth/v1/logout?scope=local',{method:'POST'});}catch{}this.session=null;this.store();}
 }
