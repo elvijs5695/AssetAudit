@@ -339,3 +339,27 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  .entry-fields > .entry-quantity .qty-control{max-width:none;grid-template-columns:54px minmax(0,1fr) 54px}
  .entry-fields > .entry-unit .field{max-width:210px}
 }
+
+
+/* v0.3.2 — quantity and unit on one row; Latvian validation flow; save confirmation */
+.entry-fields > .entry-quantity{grid-column:1/-1!important}
+.entry-fields > .entry-quantity .qty-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end}
+.entry-fields > .entry-quantity .qty-control{width:100%;max-width:none;grid-template-columns:50px minmax(72px,1fr) 50px;gap:5px}
+.entry-fields > .entry-quantity .qty-input{min-height:52px;font-size:1.15rem;font-weight:500;text-align:center}
+.entry-fields > .entry-quantity .qty-btn{min-height:52px;font-size:1.55rem;padding:5px;touch-action:manipulation;border-radius:8px}
+.entry-fields > .entry-quantity .qty-btn.qty-minus{background:#f8e6e6;border-color:#e6c0c0;color:#965454}
+.entry-fields > .entry-quantity .qty-btn.qty-minus:hover{background:#f3dddd}
+.entry-fields > .entry-quantity .qty-btn.qty-plus{background:#e6f5e9;border-color:#bddfc5;color:#34704a}
+.entry-fields > .entry-quantity .qty-btn.qty-plus:hover{background:#dcf0e1}
+.entry-unit-inline{display:flex;flex-direction:column;gap:6px;justify-self:start}
+.entry-unit-inline label{font-size:.78rem;color:#5a7365;font-weight:710;white-space:nowrap}
+.entry-unit-inline .field{min-height:52px;width:auto;min-width:11ch;max-width:13ch;padding-right:28px}
+.success-note .notice{margin-bottom:0}
+@media(max-width:700px){
+ .entry-fields > .entry-quantity .qty-row{grid-template-columns:minmax(0,1fr) auto;gap:7px}
+ .entry-unit-inline .field{min-width:10.5ch;max-width:12.5ch}
+}
+@media(max-width:430px){
+ .entry-fields > .entry-quantity .qty-control{grid-template-columns:48px minmax(64px,1fr) 48px}
+ .entry-fields > .entry-quantity .qty-btn,.entry-fields > .entry-quantity .qty-input,.entry-unit-inline .field{min-height:50px}
+}
