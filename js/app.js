@@ -1,7 +1,7 @@
 import {SupabaseAPI} from './api.js?v=0.2.7';
 import {esc,dec2,fromDec2,formatMoney,formatQty,localYear,icon,debounce} from './util.js?v=0.2.7';
 import {parseCatalogueXlsx} from './xlsx.js?v=0.2.7';
-const APP_VERSION='0.3.2';
+const APP_VERSION='0.3.3';
 const root=document.getElementById('app');
 const currentYear=localYear();
 const years=Array.from({length:11},(_,i)=>currentYear+1-i);
@@ -140,9 +140,9 @@ entryView(){
     <section class="card entry-form"><form id="quick-entry-form" autocomplete="off" novalidate><div class="entry-heading"><h2>Inventarizācijas ieraksts</h2></div><fieldset ${disabled} class="entry-fieldset"><div class="entry-fields">
       <div class="form-field entry-price"><label for="e-pz">Pavadzīmes cena, € *</label><div class="clearable-input"><input class="field" id="e-pz" autocomplete="off" inputmode="decimal" value="${eattr(inputMoney(x.invoice_price))}"><button class="clear-entry-field" type="button" data-action="clear-entry-field" data-field="e-pz" aria-label="Notīrīt pavadzīmes cenu">${icon('close',14)}</button></div></div>
       <div class="form-field entry-price"><label for="e-pl">Plaukta cena, € *</label><div class="clearable-input"><input class="field" id="e-pl" autocomplete="off" inputmode="decimal" value="${eattr(inputMoney(x.shelf_price))}"><button class="clear-entry-field" type="button" data-action="clear-entry-field" data-field="e-pl" aria-label="Notīrīt plaukta cenu">${icon('close',14)}</button></div></div>
-      <div class="form-field entry-quantity"><label for="e-qty">Daudzums *</label><div class="qty-row"><div class="qty-control"><button type="button" class="qty-btn qty-minus" data-action="qty-minus" aria-label="Samazināt daudzumu">−</button><input class="field qty-input" id="e-qty" autocomplete="off" inputmode="decimal" value="${eattr(x.quantity)}"><button type="button" class="qty-btn qty-plus" data-action="qty-plus" aria-label="Palielināt daudzumu">+</button></div><div class="entry-unit-inline"><label for="e-unit">Mērvienība</label><select class="field" id="e-unit">${options(units,x.unit)}</select></div></div></div>
-      <div class="form-field entry-floor"><label for="e-cash">Kase</label><select class="field" id="e-cash">${options(cashOptions.map(v=>({value:v,label:cashLabel(v)})),x.cash)}</select></div>
-      <div class="form-field entry-comment"><label for="e-note">Komentārs</label><div class="clearable-input"><input class="field" id="e-note" autocomplete="off" value="${eattr(x.note)}" maxlength="255"><button class="clear-entry-field" type="button" data-action="clear-entry-field" data-field="e-note" aria-label="Notīrīt komentāru">${icon('close',14)}</button></div></div>
+      <div class="form-field entry-quantity"><div class="qty-labels"><label for="e-qty">Daudzums *</label><label for="e-unit">Mērvienība</label></div><div class="qty-row"><div class="qty-control"><button type="button" class="qty-btn qty-minus" data-action="qty-minus" aria-label="Samazināt daudzumu">−</button><input class="field qty-input" id="e-qty" autocomplete="off" inputmode="decimal" value="${eattr(x.quantity)}"><button type="button" class="qty-btn qty-plus" data-action="qty-plus" aria-label="Palielināt daudzumu">+</button></div><select class="field entry-unit-select" id="e-unit">${options(units,x.unit)}</select></div></div>
+      <div class="entry-cash-note"><div class="form-field entry-floor"><label for="e-cash">Kase</label><select class="field" id="e-cash">${options(cashOptions.map(v=>({value:v,label:cashLabel(v)})),x.cash)}</select></div>
+      <div class="form-field entry-comment"><label for="e-note">Komentārs</label><div class="clearable-input"><input class="field" id="e-note" autocomplete="off" value="${eattr(x.note)}" maxlength="255"><button class="clear-entry-field" type="button" data-action="clear-entry-field" data-field="e-note" aria-label="Notīrīt komentāru">${icon('close',14)}</button></div></div></div>
     </div><div class="entry-bottom"><div class="inline-msg" id="quick-entry-warning"></div><div class="entry-actions"><button class="btn secondary" type="button" data-action="clear-entry">Notīrīt</button><button class="btn primary" type="submit">Saglabāt</button></div></div></fieldset></form></section>
   </div>`;
  }
