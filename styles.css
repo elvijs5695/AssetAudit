@@ -63,3 +63,109 @@ h1{font-size:1.5rem;letter-spacing:-.015em}h2{font-size:1rem;letter-spacing:0}
 @media(max-width:1000px){.entry-layout{grid-template-columns:1fr}.entry-form{position:static}.entry-results{max-height:260px}}
 @media(max-width:850px){.sidebar{width:74px;flex-basis:74px;padding:12px 6px}.sidebar .brand,.sidebar .side-year{display:none}.sidebar .nav-item{width:54px;height:52px;padding:0;justify-content:center}.sidebar .nav-label{display:none}.sidebar .side-user-main,.sidebar .side-logout{display:none}}
 @media(max-width:650px){.main{padding:13px 10px calc(91px + env(safe-area-inset-bottom))}.entry-layout{gap:10px}.entry-form,.entry-lookup{padding:13px}.entry-fields{grid-template-columns:1fr 1fr;gap:10px}.entry-fields .full{grid-column:1/-1}.entry-results{min-height:78px;max-height:230px}.mobile-nav{grid-template-columns:repeat(5,minmax(0,1fr));padding:5px 2px calc(6px + env(safe-area-inset-bottom));background:#fff}.mobile-nav .nav-item{min-width:0;height:64px;padding:2px 0;gap:4px;font-size:.62rem;line-height:1.06;justify-content:center}.mobile-nav .nav-label{font-size:.61rem;white-space:normal;max-width:100%;text-align:center}.mobile-nav .nav-icon svg{width:20px;height:20px}.top-actions .small-status{display:none}.qty-control{max-width:none}}
+
+/* Consistent, unobtrusive version label in administration/settings. */
+.app-version{margin-top:4px;padding:0 5px;text-align:right;color:#697780;font-size:.75rem;letter-spacing:.01em}
+
+
+/* v0.2.6 DESIGN SYSTEM — monochrome, compact, tabular; all surfaces share same focus and density. */
+:root{--forest:#202020;--ink:#202020;--muted:#5d5d5d;--line:#dedede;--accent:#232323;--accent-light:#f3f3f3;--card:#fff;--danger:#aa2929;--warning:#805916;color:var(--ink);background:#f6f6f6}
+body{background:#f6f6f6;color:#202020}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,a:focus-visible{outline:1px solid #343434;outline-offset:2px}
+.field:focus,.search-field input:focus{border-color:#464646;box-shadow:0 0 0 1px #929292;outline:0}
+.field,.search-field input{border:1px solid #cfcfcf;background:#fff;color:#202020;border-radius:5px;min-height:37px;padding:7px 9px}
+.field::placeholder,.search-field input::placeholder{color:#8a8a8a}
+.search-field input{padding-left:43px!important}
+.search-field svg{left:13px;top:50%;transform:translateY(-50%);color:#515151;pointer-events:none}
+.sidebar{background:#252525;color:#f7f7f7}
+.sidebar .nav-item{color:#e3e3e3;border-radius:6px}
+.sidebar .nav-item:hover{background:#3c3c3c}
+.sidebar .nav-item.active{background:#ededed;color:#181818}
+.side-year,.side-user{border-color:#535353}.side-user-main span{color:#c6c6c6}.side-logout{color:#f0f0f0}
+.mobile-nav .nav-item{color:#4d4d4d}.mobile-nav .nav-item.active{background:#ebebeb;color:#121212}
+.btn{border-radius:5px;min-height:36px;padding:7px 11px;font-size:.84rem}
+.btn.primary{background:#242424;color:#fff}.btn.primary:hover:not(:disabled){background:#111}
+.btn.secondary{background:#fff;border-color:#cfcfcf;color:#242424}.btn.secondary:hover{background:#f0f0f0}
+.btn.ghost{color:#303030}.btn.danger{background:#fff4f4;color:#9e2626;border-color:#dd9a9a}
+.card{border:1px solid #d9d9d9;border-radius:7px;box-shadow:none}
+.tag,.year-pill{border-radius:4px;background:#f0f0f0;color:#323232}
+.data-table{font-size:.82rem}
+.data-table th{background:#ececec;color:#343434;padding:8px 9px;letter-spacing:.025em;border-bottom:1px solid #d1d1d1}
+.data-table td{padding:6px 9px;border-bottom:1px solid #e7e7e7;color:#222}
+.data-table tbody tr:nth-of-type(even){background:#f4f4f4}
+.data-table tbody tr:hover{background:#eaeaea}
+.data-table .code,.data-table .cash-cell{font-size:inherit;color:#202020;font-weight:550}
+.data-table .row-action{color:#212121}
+.data-table .name-cell{font-weight:590}
+.table-footer{border-color:#ddd;color:#545454;padding:8px 12px}
+.mobile-card{border-radius:7px;color:#222}.mobile-card .card-code{color:#333}
+.kpi .meta,.tip{color:#565656}.kpi{padding:15px}
+.notice.info{background:#f4f4f4;border-color:#d3d3d3;color:#303030}
+.notice.error{background:#fff1f1;border-color:#e7b0b0;color:#8a2020}
+.notice.warn-strong{background:#fff6e8;border-color:#dfc19c;color:#6e441b}
+.login-screen{background:#f4f4f4}.login-form-area{border-radius:7px}
+.form-field label{color:#333;font-weight:660}
+.row-action,.icon-btn,.btn,.field{transition:border-color .1s,background-color .1s}
+/* Sticky code/name search belongs to entry workspace, not a nested scroll container. */
+.entry-workspace{display:flex;flex-direction:column;gap:12px;max-width:980px;position:relative}
+.entry-search-sticky{position:sticky;top:0;z-index:9;background:#fefefe;padding:13px 16px;border:1px solid #aaa;box-shadow:0 2px 6px #00000013}
+.entry-search-fields{display:grid;grid-template-columns:minmax(140px,.65fr) minmax(240px,1.35fr);gap:10px}
+.entry-search-sticky .entry-heading{margin-bottom:10px;padding-bottom:8px}
+.entry-search-status{display:flex;align-items:center;gap:12px;flex-wrap:wrap;color:#555;font-size:.78rem;margin-top:9px}
+.entry-form{position:static!important;padding:15px 18px}
+.entry-form .entry-heading{margin-bottom:12px}
+.entry-fieldset{border:0;padding:0;margin:0;min-width:0}
+.entry-fields{gap:11px}
+.entry-catalogue{padding:14px 0 0;overflow:hidden}
+.entry-catalogue[hidden]{display:none!important}
+.entry-catalogue-heading{display:flex;align-items:start;justify-content:space-between;padding:0 16px 11px;gap:12px;border-bottom:1px solid #dedede}
+.entry-catalogue-heading h2{font-size:1rem}
+.entry-results{margin:0;border:0;border-radius:0;max-height:none;min-height:0;overflow:visible}
+.lookup-row{border-bottom:1px solid #ddd;background:#fff;padding:9px 15px}
+.lookup-row:nth-child(even){background:#f5f5f5}
+.lookup-row:hover,.lookup-row:focus-visible{background:#e9e9e9}
+.lookup-row-name{color:#222}.lookup-row-meta{color:#565656}
+.catalogue-dismiss{display:inline-flex;align-items:center;justify-content:center;border:1px solid #d3a2a2;background:#fff3f3;color:#a32121;border-radius:5px;min-width:34px;min-height:32px}
+.catalogue-dismiss:hover{background:#ffe5e5}
+.qty-btn{border-radius:5px;background:#f2f2f2;border-color:#ccc;color:#222;min-height:44px}
+.qty-btn:hover{background:#e9e9e9}.qty-input{min-height:44px}
+.scan-main{background:#f3f3f3;border-color:#bbb;color:#222}
+.scan-main:hover{background:#e8e8e8}
+.page-size,.header-year{display:inline-flex;align-items:center;gap:7px;color:#444;font-size:.82rem}
+.details-row td{background:#ececec!important;padding:6px 11px!important}
+.expanded-wrap{padding:10px 11px}.expanded-title{font-weight:700;margin-bottom:10px}
+.detail-record{border:1px solid #d4d4d4;background:#f9f9f9;border-radius:4px;padding:10px;margin-bottom:5px}
+.detail-caption{color:#454545;font-size:.8rem}
+.history-record{padding:8px 10px;border-left:2px solid #777;margin:7px 0;background:#f4f4f4;color:#242424}
+.daily-scroll{max-height:480px;overflow-y:auto;border:1px solid #e1e1e1;border-radius:5px}
+.daily-plot{display:flex;flex-direction:column;gap:0;padding:4px}
+.daily-row{display:grid;grid-template-columns:105px 1fr 45px;align-items:center;gap:8px;padding:4px 8px;min-height:27px;font-size:.77rem}
+.daily-row:nth-child(even){background:#f5f5f5}
+.daily-track{height:12px;background:#eee;border-radius:2px;overflow:hidden}
+.daily-fill{height:100%;background:#353535;border-radius:2px}
+.chart-period{font-weight:580;font-size:.84rem;padding:8px 0;color:#3a3a3a}
+.app-version{padding:10px 0;border-top:1px solid #ddd;color:#666}
+@media(max-width:650px){.entry-workspace{gap:9px}.entry-search-sticky{top:0;padding:10px}.entry-search-fields{grid-template-columns:1fr 1.3fr;gap:7px}.entry-form{padding:12px}.entry-fields{grid-template-columns:1fr 1fr;gap:9px}.entry-catalogue-heading{padding:0 10px 10px}.daily-row{grid-template-columns:90px 1fr 38px;gap:6px;padding:4px 5px}}
+/* Sidebar contrast: fixed inherited dark text in monochrome theme. */
+.sidebar .brand,.sidebar .brand-title,.sidebar .side-year,.sidebar .side-year strong,.sidebar .side-user-main strong{color:#f7f7f7}
+.sidebar .side-year span,.sidebar .side-user-main span{color:#d1d1d1}
+.sidebar .brand-icon{background:#efefef;color:#191919;border-radius:5px}
+.sidebar .avatar{background:#4c4c4c;color:#fff}
+
+/* Administrator account lifecycle: filterable list, clear reversible status, compact actions. */
+.user-toolbar{display:flex;gap:10px;align-items:end;flex-wrap:wrap;padding:0 0 12px}
+.user-toolbar .form-field{min-width:170px;flex:0 1 240px}
+.user-toolbar .form-field:nth-child(2){flex:1 1 260px}
+.user-toolbar .form-field label{font-size:.78rem}
+.user-toolbar .field{width:100%}
+.users-count{margin-left:auto;align-self:end;min-width:max-content;font-size:.78rem;color:#555;padding:0 0 10px}
+.user-status{display:inline-flex;padding:3px 7px;border:1px solid #ccc;border-radius:4px;background:#fff;color:#242424;font-size:.78rem;font-weight:620}
+.user-status.is-inactive{border-color:#b5b5b5;background:#eee;color:#3c3c3c}
+.user-actions{display:flex;gap:6px;white-space:nowrap;align-items:center}
+.user-self{font-size:.73rem;color:#555;font-weight:400}
+.empty-users{text-align:center;color:#4e4e4e;padding:20px!important}
+@media(max-width:650px){.users-count{margin-left:0}.user-actions{flex-wrap:wrap}}
+
+/* Keep explanatory text and year-management actions visually separated. */
+.admin-buttons{display:flex;flex-wrap:wrap;gap:8px;margin-top:13px}
+.admin-buttons .btn{flex:0 0 auto}
