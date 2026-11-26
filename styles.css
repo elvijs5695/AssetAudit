@@ -321,3 +321,21 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .detail-inline strong{font-weight:400}.detail-inline .detail-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .detail-author{font-size:.72rem;color:#637681}.detail-cash{color:#445965}.detail-actions{margin-left:0}
 @media(max-width:700px){.entry-fields .qty-control{grid-template-columns:50px minmax(68px,1fr) 50px}.detail-inline{grid-template-columns:48px minmax(0,1fr) auto auto;gap:5px;min-height:44px}.detail-inline .detail-author{grid-column:2/-1}.detail-inline .detail-cash{grid-column:4}.detail-inline .detail-actions{grid-column:2/-1;justify-self:end}.detail-inline>span{min-width:0;overflow:hidden;text-overflow:ellipsis}.toolbar>select.field{max-width:100%;min-width:105px;flex:1 1 135px}}
+
+/* v0.3.1 — explicit entry-field rows; 6-column layout on all screen sizes.
+   Row 1: two prices. Row 2: quantity controls. Row 3: unit. Row 4: cash + comment. */
+.entry-fields > .entry-price{grid-column:span 3}
+.entry-fields > .entry-quantity,
+.entry-fields > .entry-unit{grid-column:1/-1!important}
+.entry-fields > .entry-floor{grid-column:span 2!important;min-width:0}
+.entry-fields > .entry-comment{grid-column:span 4!important;min-width:0}
+.entry-fields > .entry-quantity .qty-control{width:100%;max-width:430px;grid-template-columns:54px minmax(0,1fr) 54px}
+.entry-fields > .entry-unit .field{width:100%;max-width:210px}
+@media(max-width:700px){
+ .entry-fields > .entry-quantity,
+ .entry-fields > .entry-unit{grid-column:1/-1!important}
+ .entry-fields > .entry-floor{grid-column:span 2!important}
+ .entry-fields > .entry-comment{grid-column:span 4!important}
+ .entry-fields > .entry-quantity .qty-control{max-width:none;grid-template-columns:54px minmax(0,1fr) 54px}
+ .entry-fields > .entry-unit .field{max-width:210px}
+}
