@@ -1,4 +1,4 @@
-/** Inventarizācija v0.2.9 — browser client. Publishable key only; privileged operations remain server-side.
+/** Inventarizācija v0.3.0 — browser client. Publishable key only; privileged operations remain server-side.
  * localStorage deliberately persists Supabase sessions across browser restarts (not passwords).
  * Strict CSP, no untrusted HTML rendering, and audit/RLS enforcement remain essential.
  */
@@ -83,9 +83,11 @@ export class SupabaseAPI {
     return response[0];
   }
   async rpc(fn,body={}){return this.request('/rest/v1/rpc/'+fn,{method:'POST',body});}
-  async inventoryList({year,search='',cash='',limit=50,offset=0}){return this.rpc('inventory_list',{p_year:year,p_search:search,p_cash:cash,p_limit:limit,p_offset:offset});}
-  async inventoryDetails(group,year){return this.rpc('inventory_details_readable',{p_year:year,p_code:group.code,p_name:group.name,p_invoice_price:group.invoice_price,p_shelf_price:group.shelf_price,p_cash:group.cash,p_unit:group.unit});}
+  async inventoryList({year,search='',cash='',sort='recent',user='',limit=50,offset=0}){return this.rpc('inventory_list_sorted',{p_year:year,p_search:search,p_cash:cash,p_sort:sort,p_user_id:user||null,p_limit:limit,p_offset:offset});}
+  async inventoryDetails(group,year,user=''){return this.rpc(user?'inventory_details_by_user':'inventory_details_readable',{p_year:year,p_code:group.code,p_name:group.name,p_invoice_price:group.invoice_price,p_shelf_price:group.shelf_price,p_cash:group.cash,p_unit:group.unit,...(user?{p_user_id:user}:{})});}
   async catalogueSearch(search='',offset=0,limit=50){return this.rpc('catalogue_search_with_unit',{p_search:search,p_offset:offset,p_limit:limit});}
+  async catalogueSearchSorted(search='',offset=0,limit=50,sort='alpha'){return this.rpc('catalogue_search_sorted',{p_search:search,p_offset:offset,p_limit:limit,p_sort:sort});}
+  async adminUserCounts(year){return this.rpc('admin_user_entry_counts',{p_year:year});}
   async catalogueSearchFields({code='',name='',barcode}={}){return this.rpc('catalogue_search_fields',{p_code:code,p_name:name,p_barcode:barcode||'',p_limit:25});}
   async catalogueByBarcode(barcode){return this.rpc('catalogue_by_barcode_with_unit',{p_barcode:barcode});}
   async inventorySubmit(payload){return this.rpc('inventory_submit',payload);}

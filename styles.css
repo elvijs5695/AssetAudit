@@ -310,3 +310,14 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  .compact-mobile-row:not(.catalogue-mobile-row) .compact-money{display:none}
  .compact-lookup .lookup-row-meta span:nth-child(2){display:none}
 }
+
+/* v0.3.0 — usable quantity controls and aligned details */
+.entry-fields .qty-control{grid-template-columns:50px minmax(76px,1fr) 50px;gap:5px;max-width:none}
+.entry-fields .qty-btn{min-height:52px;font-size:1.55rem;padding:5px;touch-action:manipulation}
+.entry-fields .qty-input{min-height:52px;font-size:1.15rem;font-weight:500}
+.entry-fields>.form-field:has(.qty-control){grid-column:span 2}
+.detail-record{border-radius:0;margin-bottom:0;border-left:0;border-right:0}
+.detail-inline{display:grid;grid-template-columns:64px minmax(120px,1fr) 100px 104px 90px minmax(140px,auto) auto;align-items:center;gap:8px;font-weight:400}
+.detail-inline strong{font-weight:400}.detail-inline .detail-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.detail-author{font-size:.72rem;color:#637681}.detail-cash{color:#445965}.detail-actions{margin-left:0}
+@media(max-width:700px){.entry-fields .qty-control{grid-template-columns:50px minmax(68px,1fr) 50px}.detail-inline{grid-template-columns:48px minmax(0,1fr) auto auto;gap:5px;min-height:44px}.detail-inline .detail-author{grid-column:2/-1}.detail-inline .detail-cash{grid-column:4}.detail-inline .detail-actions{grid-column:2/-1;justify-self:end}.detail-inline>span{min-width:0;overflow:hidden;text-overflow:ellipsis}.toolbar>select.field{max-width:100%;min-width:105px;flex:1 1 135px}}
