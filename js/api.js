@@ -1,4 +1,4 @@
-/** Inventarizācija v0.2.8 — browser client. Publishable key only; privileged operations remain server-side.
+/** Inventarizācija v0.2.9 — browser client. Publishable key only; privileged operations remain server-side.
  * localStorage deliberately persists Supabase sessions across browser restarts (not passwords).
  * Strict CSP, no untrusted HTML rendering, and audit/RLS enforcement remain essential.
  */

@@ -1,7 +1,7 @@
 import {SupabaseAPI} from './api.js?v=0.2.7';
 import {esc,dec2,fromDec2,formatMoney,formatQty,localYear,icon,debounce} from './util.js?v=0.2.7';
 import {parseCatalogueXlsx} from './xlsx.js?v=0.2.7';
-const APP_VERSION='0.2.8';
+const APP_VERSION='0.2.9';
 const root=document.getElementById('app');
 const currentYear=localYear();
 const years=Array.from({length:11},(_,i)=>currentYear+1-i);
@@ -190,7 +190,7 @@ entryView(){
   const keepPrice=sameIdentity&&Boolean(x.invoice_price||x.shelf_price);
   this.fillQuickDraft({code:item.code??'',name:item.name??'',invoice_price:keepPrice&&x.invoice_price?x.invoice_price:inputMoney(item.invoice_price),shelf_price:keepPrice&&x.shelf_price?x.shelf_price:inputMoney(item.shelf_price),barcode:item.barcode||x.barcode||'',...(item.unit&&!this.entryUnitManual?{unit:item.unit}:{})});
   // Quantity is always user-owned and is never changed when choosing a catalogue item.
-  this.entryCatalogueOpen=false;this.entrySearchState='idle';this.entryNoMatchAwaitNext=false;this.entrySeq++;this.updateEntryResults();root.querySelector('#e-qty')?.focus();
+  this.entryCatalogueOpen=false;this.entrySearchState='idle';this.entryNoMatchAwaitNext=false;this.entrySeq++;this.updateEntryResults(); // Keep scanned/selected item readable; do not summon the mobile keyboard.
  }
  quickPriceWarning(){
   const f=root.querySelector('#quick-entry-warning');if(!f)return;
@@ -289,7 +289,7 @@ inventoryView(){return `<div class="layout-stack"><div class="toolbar"><div clas
  }
   h.innerHTML=`<div class="modal-backdrop"><section class="modal ${['details','xlsx','year-wizard'].includes(m.type)?'wide':''}" role="dialog" aria-modal="true" aria-label="${eattr(title)}"><header class="modal-header"><div><h2>${esc(title)}</h2><p>${esc(sub)}</p></div><button class="icon-btn" data-action="close" aria-label="Aizvērt">${icon('close')}</button></header>${m.type==='user'?`<form id="user-form" autocomplete="off">${body}</form>`:body}</section></div>`;
  if(m.type==='scan')this.startScan();
- if(m.type==='entry'&&!m.edit)root.querySelector('#f-name')?.focus();
+ if(m.type==='entry'&&!m.edit&&!m.fromScan)root.querySelector('#f-name')?.focus();
  }
  showModal(m){this.modal=m;this.renderModal()}
  closeModal(){this.stopScan();this.modal=this.modalStack.pop()||null;this.renderModal()}
@@ -406,7 +406,7 @@ change(e){
  async handleScannedBarcode(barcode){
   this.stopScan();
   if(this.scanSource==='edit'){
-   this.showModal({type:'entry',edit:!!this.scanReturn?._scan_edit,data:{...this.scanReturn,barcode}});
+   this.showModal({type:'entry',edit:!!this.scanReturn?._scan_edit,fromScan:true,data:{...this.scanReturn,barcode}});
    this.scanReturn=null;
    try{const found=await this.api.catalogueByBarcode(barcode);if(found.length===1)this.applyProduct(found[0]);else if(found.length>1)this.showEditSuggestions(found)}catch{}
   }else{
