@@ -1,4 +1,4 @@
-/** AssetAudit v0.2.6 — browser client. Publishable key only; privileged operations remain server-side.
+/** Inventarizācija v0.2.7 — browser client. Publishable key only; privileged operations remain server-side.
  * localStorage deliberately persists Supabase sessions across browser restarts (not passwords).
  * Strict CSP, no untrusted HTML rendering, and audit/RLS enforcement remain essential.
  */
@@ -23,7 +23,9 @@ export class SupabaseAPI {
     catch{throw new Error('Nav savienojuma ar Supabase. Pārbaudiet internetu. Sesija saglabāta.');}
     const raw=await res.text();let data;try{data=raw?JSON.parse(raw):null;}catch{data=raw;}
     if(!res.ok){
+      if(auth&&auth!==false&&(data?.error_code==='session_not_found'||data?.code==='session_not_found'||/session from session_id claim in jwt does not exist/i.test(String(data?.msg||data?.message||'')))){this.session=null;this.store();const err=new Error('Iepriekšējā sesija ir atsaukta (piemēram, pēc paroles maiņas vai izrakstīšanās citā ierīcē). Pieslēdzieties vēlreiz.');err.status=401;err.code='session_not_found';throw err;}
       const error=data?.msg||data?.message||data?.error_description||data?.error||data?.hint||`Servera kļūda (${res.status})`;
+      if((data?.code==='PGRST202'||data?.error_code==='PGRST202')&&/(catalogue_search_fields|catalogue_search_with_unit|catalogue_by_barcode_with_unit|catalogue_change_with_unit)/i.test(String(error))){const setup=new Error('Supabase datubāzē vēl nav migrācijas 007. Kataloga funkcijas nav pieejamas.');setup.code='MIGRATIONS_REQUIRED';throw setup;}
       const ex=new Error(String(error));ex.status=res.status;ex.code=data?.error_code||data?.code||'';throw ex;
     }
     return data;
@@ -60,14 +62,34 @@ export class SupabaseAPI {
     if(!Array.isArray(profiles)||!profiles[0]?.active){this.session=null;this.store();throw new Error('Lietotāja profils nav aktivizēts. Sazinieties ar administratoru.');}
     return profiles[0];
   }
-  async config(){const r=await this.request('/rest/v1/rpc/admin_year_status',{method:'POST',body:{}});return r?.[0]||{active_year:2026,year_closed:false};}
+  async config(){
+    let response;
+    try {
+      response=await this.request('/rest/v1/rpc/admin_year_status',{method:'POST',body:{}});
+    } catch(error){
+      // The login has succeeded. Missing database migrations must not look like bad credentials.
+      if(error.code==='PGRST202' && /admin_year_status/i.test(error.message)){
+        const problem=new Error('Nav pieejama gada statusa funkcija. Pārbaudiet migrācijas 005 un 006 un Supabase shēmas kešatmiņu.');
+        problem.code='MIGRATIONS_REQUIRED';
+        throw problem;
+      }
+      throw error;
+    }
+    if(!Array.isArray(response)||response.length!==1||!Number.isInteger(Number(response[0].active_year))||typeof response[0].year_closed!=='boolean'){
+      const problem=new Error('Neizdevās nolasīt inventarizācijas gada iestatījumus. Datu ievade ir apturēta.');
+      problem.code='CONFIG_INVALID';
+      throw problem;
+    }
+    return response[0];
+  }
   async rpc(fn,body={}){return this.request('/rest/v1/rpc/'+fn,{method:'POST',body});}
   async inventoryList({year,search='',cash='',limit=50,offset=0}){return this.rpc('inventory_list',{p_year:year,p_search:search,p_cash:cash,p_limit:limit,p_offset:offset});}
   async inventoryDetails(group,year){return this.rpc('inventory_details_readable',{p_year:year,p_code:group.code,p_name:group.name,p_invoice_price:group.invoice_price,p_shelf_price:group.shelf_price,p_cash:group.cash,p_unit:group.unit});}
-  async catalogueSearch(search='',offset=0,limit=50){return this.rpc('catalogue_search',{p_search:search,p_offset:offset,p_limit:limit});}
-  async catalogueByBarcode(barcode){return this.rpc('catalogue_by_barcode',{p_barcode:barcode});}
+  async catalogueSearch(search='',offset=0,limit=50){return this.rpc('catalogue_search_with_unit',{p_search:search,p_offset:offset,p_limit:limit});}
+  async catalogueSearchFields({code='',name='',barcode}={}){return this.rpc('catalogue_search_fields',{p_code:code,p_name:name,p_barcode:barcode||'',p_limit:25});}
+  async catalogueByBarcode(barcode){return this.rpc('catalogue_by_barcode_with_unit',{p_barcode:barcode});}
   async inventorySubmit(payload){return this.rpc('inventory_submit',payload);}
-  async catalogueChange(payload){return this.rpc('catalogue_change',payload);}
+  async catalogueChange(payload){return this.rpc('catalogue_change_with_unit',payload);}
   async adminStats(year,cash=''){const r=await this.rpc('admin_stats_by_cash',{p_year:year,p_cash:cash});return r?.[0]||{};}
   async adminDaily(year,from,to,cash=''){return this.rpc('admin_daily_entries',{p_year:year,p_from:from,p_to:to,p_cash:cash});}
   async adminHistory(entryId){return this.rpc('admin_history_readable',{p_entry_id:entryId});}
@@ -89,5 +111,5 @@ export class SupabaseAPI {
   async adminCatalogueBatch(rows,dry=true){return this.rpc('admin_catalogue_batch',{p_rows:rows,p_dry_run:dry});}
   async adminCloseYear(year){return this.rpc('admin_close_year',{p_year:year});}
   async adminPrepareNextYear(year,rows,dry=true){return this.rpc('admin_prepare_next_year',{p_year:year,p_rows:rows,p_dry_run:dry});}
-  async logout(){try{if(this.session?.access_token)await this.request('/auth/v1/logout',{method:'POST'});}catch{}this.session=null;this.store();}
+  async logout(){try{if(this.session?.access_token)await this.request('/auth/v1/logout?scope=local',{method:'POST'});}catch{}this.session=null;this.store();}
 }

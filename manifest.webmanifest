@@ -1,13 +1,13 @@
 {
-  "name": "Inventarizācija — AssetAudit",
-  "short_name": "AssetAudit",
+  "name": "Inventarizācija",
+  "short_name": "Inventarizācija",
   "description": "Inventarizācijas un kataloga uzskaite",
   "lang": "lv",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#FFFFFF",
-  "theme_color": "#171717",
+  "theme_color": "#214b62",
   "icons": [
     {
       "src": "./assets/icon-192.png",
