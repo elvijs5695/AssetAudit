@@ -62,7 +62,7 @@ export async function parseCatalogueXlsx(file) {
       if (['A','B','C','D'].includes(col)) cells[col]=value;
     }
     if (rowIndex===1) {
-      if (['KODS','NOSAUKUMS','PZ_CENA','SVITRU_KODS'].some((h,i)=>cells['ABCD'[i]]!==h)) throw Error('Galvenēm jābūt precīzi: KODS; NOSAUKUMS; PZ_CENA; SVITRU_KODS');
+      if (['KODS','NOSAUKUMS','PZ_CENA','SVITRKODS'].some((h,i)=>cells['ABCD'[i]]!==h)) throw Error('Galvenēm jābūt precīzi: KODS; NOSAUKUMS; PZ_CENA; SVITRKODS');
       header=true;continue;
     }
     if (rowIndex<2 || !Object.values(cells).some(v=>v)) continue;

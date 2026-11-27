@@ -652,3 +652,50 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
  .mobile-nav .nav-label{font-size:.57rem!important;overflow-wrap:break-word;line-height:1.07}
  .mobile-nav .nav-icon svg{width:19px;height:19px}
 }
+
+/* v0.3.7: compact green activity status, predictable mobile controls and reviewed XLSX imports. */
+.entry-recent-options{display:none;align-items:center;justify-content:flex-start;min-height:29px;margin:2px 0 0;padding:0 3px;color:#647989}
+.entry-recent-options .entry-recent-toggle{margin:0}
+@media(min-width:1180px){
+ .entry-workspace>.entry-recent-options{display:flex;grid-column:1/-1;grid-row:3}
+ .entry-workspace>.entry-recent:not([hidden]){grid-row:4!important}
+}
+@media(max-width:1179px){.entry-recent-options,.entry-workspace>.entry-recent:not([hidden]){display:none!important}}
+.entry-form .entry-actions,.entry-bottom .entry-actions{border-top:0!important;padding-top:0!important;margin-top:20px!important}
+.entry-recent-table tr.is-session-item.session-tone-a>td{background:#e6f5ea}
+.entry-recent-table tr.is-session-item.session-tone-b>td{background:#d9f0e0}
+.entry-recent-table tr.is-session-item:hover>td{background:#c5e5d1!important}
+.inventory-table tr.group-row.is-unread.unread-tone-a>td,.compact-mobile-row.is-unread.unread-tone-a{background:#e6f5ea}
+.inventory-table tr.group-row.is-unread.unread-tone-b>td,.compact-mobile-row.is-unread.unread-tone-b{background:#d9f0e0}
+.inventory-table tr.group-row.is-unread:hover>td,.mobile-card.compact-mobile-row.is-unread:hover{background:#c5e5d1!important}
+@keyframes pulseGreenKeep{0%,24%{background:#9fdfb1}60%{background:#c7edcf}100%{background:#edf8f0}}
+.inventory-table tr.spotlight-once>td,.inventory-table tr.spotlight-once:hover>td,.compact-mobile-row.spotlight-once{animation:pulseGreenKeep 1.55s ease-out 1!important}
+.inventory-table tr.spotlight-settled>td,.compact-mobile-row.spotlight-settled{background:#edf8f0!important}
+.inventory-table tr.spotlight-settled:hover>td,.compact-mobile-row.spotlight-settled:hover{background:#d8f0df!important}
+.search-field.has-clear-search{min-width:0;position:relative}
+.search-field.has-clear-search input{padding-right:40px!important;min-width:0}
+.clear-search-field{display:flex;align-items:center;justify-content:center;width:29px;height:29px;border:0;position:absolute;right:5px;top:50%;transform:translateY(-50%);color:#b74242;background:#fff1f0;border-radius:7px;padding:4px;z-index:2}
+.clear-search-field:hover{background:#f7d8d5;color:#8f2929}
+.dismiss-empty-results{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;cursor:pointer;background:#f4f8fb;border:0;color:#566876;padding:12px;min-height:44px}
+.dismiss-empty-results span{color:#347399;text-decoration:underline;white-space:nowrap}
+.dismiss-empty-results:hover{background:#e0eef8}
+@media(max-width:700px){
+ .topbar{display:none!important}
+ .toolbar{display:flex;align-items:center;gap:8px}
+ .toolbar .search-field{flex:1 1 calc(100% - 52px);min-width:0}
+ .mobile-refresh-inline{flex:0 0 42px!important;width:42px;height:42px;min-width:42px;min-height:42px;display:inline-flex!important;align-items:center;justify-content:center;margin:0}
+ .mobile-nav .nav-inventory-first,.mobile-nav .nav-inventory-last{display:block;line-height:1.07}
+ .entry-recent,.entry-recent-options{display:none!important}
+}
+.file-ready-pulse{animation:readyFilePulse 1.3s ease-out 2}
+@keyframes readyFilePulse{0%,100%{box-shadow:0 0 0 0 rgba(35,121,98,0)}45%{box-shadow:0 0 0 6px rgba(35,121,98,.20);background:#edf8f2}}
+@media(prefers-reduced-motion:reduce){.file-ready-pulse,.inventory-table tr.spotlight-once>td,.compact-mobile-row.spotlight-once{animation:none!important}}
+.import-conflicts{display:grid;gap:8px}
+.import-conflicts h3{font-size:.9rem;font-weight:650;margin:0 0 2px}
+.import-conflict-review{background:#f9fbfc;border:1px solid #dce5e9;border-radius:8px;padding:10px 12px;display:grid;gap:5px;font-size:.82rem}
+.import-conflict-main{color:#213c4a;overflow-wrap:anywhere}
+.import-conflict-previous{font-size:.76rem;color:#697d86;overflow-wrap:anywhere}
+.import-conflict-controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:end}
+.import-conflict-controls label{font-size:.75rem;color:#6b7d88;display:flex;flex-direction:column;gap:3px;min-width:0}
+.import-conflict-controls .field{width:100%;min-width:0}
+@media(max-width:420px){.import-conflict-controls{grid-template-columns:1fr}}

@@ -27,7 +27,7 @@ export class SupabaseAPI {
       const error=data?.msg||data?.message||data?.error_description||data?.error||data?.hint||`Servera kļūda (${res.status})`;
       if((data?.code==='PGRST202'||data?.error_code==='PGRST202')&&/(catalogue_search_fields|catalogue_search_with_unit|catalogue_by_barcode_with_unit|catalogue_change_with_unit)/i.test(String(error))){const setup=new Error('Supabase datubāzē vēl nav migrācijas 007. Kataloga funkcijas nav pieejamas.');setup.code='MIGRATIONS_REQUIRED';throw setup;}
       if((data?.code==='PGRST202'||data?.error_code==='PGRST202')&&/(remote_scanner_)/i.test(String(error))){const setup=new Error('Nepieciešama Supabase migrācija 012 attālinātajam svītrkoda skenerim.');setup.code='MIGRATIONS_REQUIRED';throw setup;}
-      if((data?.code==='PGRST202'||data?.error_code==='PGRST202')&&/(inventory_list_v035|inventory_feed_page|inventory_feed_head|inventory_view_state|inventory_mark_seen|inventory_mark_one_seen)/i.test(String(error))){const setup=new Error('Trūkst datubāzes migrācijas 011. Nepieciešama inventarizācijas saraksta un apskates atzīmju atjaunināšana.');setup.code='MIGRATIONS_REQUIRED';throw setup;}
+      if((data?.code==='PGRST202'||data?.error_code==='PGRST202')&&/(inventory_list_v035|inventory_feed_page|inventory_feed_head|inventory_view_state|inventory_mark_seen|inventory_mark_one_seen|inventory_unread_count)/i.test(String(error))){const setup=new Error('Trūkst datubāzes migrācijas 011. Nepieciešama inventarizācijas saraksta un apskates atzīmju atjaunināšana.');setup.code='MIGRATIONS_REQUIRED';throw setup;}
       const ex=new Error(String(error));ex.status=res.status;ex.code=data?.error_code||data?.code||'';throw ex;
     }
     return data;
@@ -87,6 +87,7 @@ export class SupabaseAPI {
   async rpc(fn,body={}){return this.request('/rest/v1/rpc/'+fn,{method:'POST',body});}
   async inventoryList({year,search='',cash='',sort='recent',user='',limit=50,offset=0}){return this.rpc('inventory_list_v035',{p_year:year,p_search:search,p_cash:cash,p_sort:sort,p_user_id:user||null,p_limit:limit,p_offset:offset});}
   async inventoryViewState(year){const rows=await this.rpc('inventory_view_state',{p_year:year});return rows?.[0]||{seen_feed_id:0,snapshot_feed_id:0};}
+  async inventoryUnreadCount(year,snapshot){return this.rpc('inventory_unread_count',{p_year:year,p_snapshot_feed_id:snapshot});}
   async inventoryMarkSeen(year,snapshot){return this.rpc('inventory_mark_seen',{p_year:year,p_snapshot_feed_id:snapshot});}
   async inventoryMarkOneSeen(year,id){return this.rpc('inventory_mark_one_seen',{p_year:year,p_entry_id:id});}
   async inventoryFeedHead(year){return this.rpc('inventory_feed_head',{p_year:year});}
