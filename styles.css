@@ -597,9 +597,9 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .inventory-unread-explain{font-size:.76rem;color:#71838c}
 .inventory-unread-toolbar .btn{white-space:normal}
 /* Pulse only when a record arrives or is opened; afterwards revert to its regular state. */
-@keyframes activityGreenPulse{0%{background-color:#c9eecf}25%{background-color:#a9dfb8}75%{background-color:#d4f4dc}100%{background-color:transparent}}
+@keyframes activityGreenPulse{0%{background-color:#b4e6c1}24%{background-color:#96dba9}65%{background-color:#d0f0d9}100%{background-color:#e6f5ea}}
 .entry-recent-table tr.is-pulsing>td,.entry-recent-table tr.is-pulsing:hover>td{animation:activityGreenPulse 1.65s ease-out 1}
-@keyframes recordSpotlight{0%,28%{background-color:#b8ebc4}100%{background-color:#fff}}
+@keyframes recordSpotlight{0%,28%{background-color:#a6e1b5}65%{background-color:#d1f0da}100%{background-color:#edf8f0}}
 .inventory-table tr.spotlight-once>td,.inventory-table tr.spotlight-once:hover>td,.compact-mobile-row.spotlight-once,.detail-record.spotlight-once{animation:recordSpotlight 1.55s ease-out 1!important}
 @media (prefers-reduced-motion:reduce){.entry-recent-table tr.is-pulsing>td,.spotlight-once{animation:none!important}}
 /* Keep the barcode visible on mobile as a compact fixed-width code, with ellipsis. */
@@ -668,14 +668,15 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .inventory-table tr.group-row.is-unread.unread-tone-a>td,.compact-mobile-row.is-unread.unread-tone-a{background:#e6f5ea}
 .inventory-table tr.group-row.is-unread.unread-tone-b>td,.compact-mobile-row.is-unread.unread-tone-b{background:#d9f0e0}
 .inventory-table tr.group-row.is-unread:hover>td,.mobile-card.compact-mobile-row.is-unread:hover{background:#c5e5d1!important}
-@keyframes pulseGreenKeep{0%,24%{background:#9fdfb1}60%{background:#c7edcf}100%{background:#edf8f0}}
-.inventory-table tr.spotlight-once>td,.inventory-table tr.spotlight-once:hover>td,.compact-mobile-row.spotlight-once{animation:pulseGreenKeep 1.55s ease-out 1!important}
-.inventory-table tr.spotlight-settled>td,.compact-mobile-row.spotlight-settled{background:#edf8f0!important}
-.inventory-table tr.spotlight-settled:hover>td,.compact-mobile-row.spotlight-settled:hover{background:#d8f0df!important}
+@keyframes pulseGreenKeep{0%,24%{background-color:#a6e1b5}60%{background-color:#d1f0da}100%{background-color:#edf8f0}}
+.inventory-table tr.spotlight-once>td,.inventory-table tr.spotlight-once:hover>td,.compact-mobile-row.spotlight-once,.detail-record.spotlight-once{animation:pulseGreenKeep 1.55s ease-out 1!important}
+.inventory-table tr.spotlight-settled>td,.compact-mobile-row.spotlight-settled,.detail-record.spotlight-settled{background:#edf8f0!important}
+.inventory-table tr.spotlight-settled:hover>td,.compact-mobile-row.spotlight-settled:hover,.detail-record.spotlight-settled:hover{background:#d8f0df!important}
 .search-field.has-clear-search{min-width:0;position:relative}
-.search-field.has-clear-search input{padding-right:40px!important;min-width:0}
-.clear-search-field{display:flex;align-items:center;justify-content:center;width:29px;height:29px;border:0;position:absolute;right:5px;top:50%;transform:translateY(-50%);color:#b74242;background:#fff1f0;border-radius:7px;padding:4px;z-index:2}
-.clear-search-field:hover{background:#f7d8d5;color:#8f2929}
+.search-field.has-clear-search input{padding-right:33px!important;min-width:0}
+/* All search clear buttons share the exact .clear-entry-field design from data entry. */
+.search-field.has-clear-search .clear-search-field{right:5px;left:auto;top:50%;z-index:2}
+.search-field.has-clear-search .clear-search-field svg{position:static;left:auto;top:auto;transform:none;color:inherit;width:14px;height:14px}
 .dismiss-empty-results{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;cursor:pointer;background:#f4f8fb;border:0;color:#566876;padding:12px;min-height:44px}
 .dismiss-empty-results span{color:#347399;text-decoration:underline;white-space:nowrap}
 .dismiss-empty-results:hover{background:#e0eef8}
@@ -689,7 +690,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 }
 .file-ready-pulse{animation:readyFilePulse 1.3s ease-out 2}
 @keyframes readyFilePulse{0%,100%{box-shadow:0 0 0 0 rgba(35,121,98,0)}45%{box-shadow:0 0 0 6px rgba(35,121,98,.20);background:#edf8f2}}
-@media(prefers-reduced-motion:reduce){.file-ready-pulse,.inventory-table tr.spotlight-once>td,.compact-mobile-row.spotlight-once{animation:none!important}}
+@media(prefers-reduced-motion:reduce){.file-ready-pulse,.inventory-table tr.spotlight-once>td,.compact-mobile-row.spotlight-once,.detail-record.spotlight-once,.entry-recent-table tr.is-pulsing>td{animation:none!important}}
 .import-conflicts{display:grid;gap:8px}
 .import-conflicts h3{font-size:.9rem;font-weight:650;margin:0 0 2px}
 .import-conflict-review{background:#f9fbfc;border:1px solid #dce5e9;border-radius:8px;padding:10px 12px;display:grid;gap:5px;font-size:.82rem}
@@ -699,3 +700,42 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .import-conflict-controls label{font-size:.75rem;color:#6b7d88;display:flex;flex-direction:column;gap:3px;min-width:0}
 .import-conflict-controls .field{width:100%;min-width:0}
 @media(max-width:420px){.import-conflict-controls{grid-template-columns:1fr}}
+
+/* v0.3.8 — Compact direction controls alongside the sorting fields. */
+.toolbar select.sort-direction{flex:0 0 auto;min-width:112px;max-width:132px}
+@media(max-width:700px){.toolbar select.sort-direction{flex:1 1 115px;min-width:110px;max-width:none}}
+
+/* v0.3.8 — admin diagnostics. */
+.admin-diagnostics{display:grid;gap:16px;min-width:0}
+.diagnostic-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;min-width:0}
+.diagnostic-card{min-width:0}
+.diagnostic-sub{margin:-8px 0 12px}
+.diagnostic-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 16px}
+.diagnostic-metric{display:flex;align-items:baseline;justify-content:space-between;gap:12px;min-width:0;padding:9px 0;border-bottom:1px solid #e8ecee;font-size:.8rem}
+.diagnostic-metric span{color:#76818a;min-width:0}
+.diagnostic-metric strong{font-weight:600;white-space:nowrap;font-size:.94rem}
+.diagnostic-issues{border-top:1px solid #e1e7ea}
+.diagnostic-issue{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 1px;border-bottom:1px solid #e8ecee}
+.diagnostic-issue-text{display:flex;flex-direction:column;gap:3px;min-width:0;font-size:.81rem}
+.diagnostic-issue-text strong{font-weight:650}
+.diagnostic-issue-text>span:not(.diagnostic-scope){color:#4e606d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.diagnostic-issue-text small,.diagnostic-scope{color:#77858e;font-size:.72rem}
+.diagnostic-scope{font-weight:700}
+.diagnostic-issue .btn{flex:0 0 auto}
+@media(max-width:1000px){.diagnostic-pair{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:420px){.diagnostic-metrics{grid-template-columns:minmax(0,1fr)}.diagnostic-issue{align-items:flex-start}.diagnostic-issue .btn{margin-top:5px}}
+
+
+/* v0.3.8 — conspicuous, server-acknowledged remote barcode transfer */
+.remote-scan-success{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;text-align:center;padding:30px 16px 34px;min-height:260px;color:#1f6242}
+.remote-scan-success-circle{display:flex;align-items:center;justify-content:center;width:132px;height:132px;border-radius:50%;background:#2e9158;color:#fff;box-shadow:0 0 0 8px #e8f5eb;animation:scannerSuccessPop .32s ease-out both}
+.remote-scan-success-circle svg{width:68px;height:68px;stroke-width:2.7;stroke:currentColor}
+.remote-scan-success strong{font-size:1.2rem;font-weight:760}
+.remote-scan-success p{font-size:.9rem;color:#647a70;margin:0}
+@keyframes scannerSuccessPop{0%{transform:scale(.82);opacity:.65}100%{transform:scale(1);opacity:1}}
+@media(prefers-reduced-motion:reduce){.remote-scan-success-circle{animation:none}}
+
+/* Pārlūkojami visi datu ievades kataloga meklēšanas rezultāti pa lapām. */
+.entry-load-more{display:block;width:100%;min-height:44px;padding:10px 12px;background:#e9f1f7;color:#2d5268;border:0;border-top:1px solid #c8d8e3;font-weight:600;cursor:pointer}
+.entry-load-more:hover,.entry-load-more:focus-visible{background:#cfe2ef}
+.entry-load-more:disabled{cursor:default;opacity:.75}

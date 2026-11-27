@@ -1,7 +1,8 @@
-import {SupabaseAPI} from './api.js?v=0.3.7';
-import {esc,dec2,fromDec2,formatMoney,formatQty,localYear,icon,debounce} from './util.js?v=0.3.7';
-import {parseCatalogueXlsx} from './xlsx.js?v=0.3.7';
-const APP_VERSION='0.3.7';
+import {SupabaseAPI} from './api.js?v=0.3.8';
+import {esc,dec2,fromDec2,formatMoney,formatQty,localYear,icon,debounce} from './util.js?v=0.3.8';
+import {parseCatalogueXlsx} from './xlsx.js?v=0.3.8';
+const APP_VERSION='0.3.8';
+const ENTRY_SEARCH_PAGE_SIZE=50;
 const root=document.getElementById('app');
 const currentYear=localYear();
 const years=Array.from({length:11},(_,i)=>currentYear+1-i);
@@ -27,8 +28,8 @@ const fieldSelect=(id,label,values,selected)=>`<div class="form-field"><label fo
 class InventoryApp{
  constructor(){
   this.api=new SupabaseAPI(window.APP_CONFIG||{});this.me=null;
-  this.section='entry';this.year=currentYear;this.config={active_year:currentYear,year_closed:false};this.search='';this.cash='';this.inventorySort='recent';this.catalogueSort='alpha';this.inventoryUser='';this.userCounts={};this.statsCash='';this.offset=0;this.invPageSize=50;this.catPageSize=50;this.expandedRow=-1;this.expandedDetails=[];this.inlineHistory={};this.xlsxRows=[];this.xlsxPreview=null;this.xlsxFileName='';this.xlsxConflictRows=[];this.xlsxResolutions={};this.xlsxNeedsRecheck=false;this.nextYearPreview=null;this.modalStack=[];this.daily=[];
-  this.catalogue=[];this.inventory=[];this.entryResults=[];this.entryQuery='';this.entryDraft={code:'',name:'',barcode:'',quantity:'1.00',unit:'gabali',invoice_price:'',shelf_price:'',cash:'1.stāvs',note:''};this.entryRequestId=null;this.entrySeq=0;this.entryCatalogueOpen=false;this.entrySearchEnabled=true;this.entrySearchState='idle';this.entryNoMatchAwaitNext=false;this.entryUnitManual=false;this.scanSource='entry';this.detail=null;this.stats=null;this.users=[];this.userStatusFilter='all';this.modal=null;this.suggest=[];this.busy=false;this.scanner=null;this.flash='';
+  this.section='entry';this.year=currentYear;this.config={active_year:currentYear,year_closed:false};this.search='';this.cash='';this.inventorySort='recent';this.inventoryDirection='desc';this.catalogueSort='alpha';this.catalogueDirection='asc';this.inventoryUser='';this.userCounts={};this.diagnostics=null;this.diagnosticError='';this.statsCash='';this.offset=0;this.invPageSize=50;this.catPageSize=50;this.expandedRow=-1;this.expandedDetails=[];this.inlineHistory={};this.xlsxRows=[];this.xlsxPreview=null;this.xlsxFileName='';this.xlsxConflictRows=[];this.xlsxResolutions={};this.xlsxNeedsRecheck=false;this.nextYearPreview=null;this.modalStack=[];this.daily=[];
+  this.catalogue=[];this.inventory=[];this.entryResults=[];this.entryResultsHasMore=false;this.entryResultsLoadingMore=false;this.entryResultsMoreError=false;this.entrySearchParams=null;this.entryQuery='';this.entryDraft={code:'',name:'',barcode:'',quantity:'1.00',unit:'gabali',invoice_price:'',shelf_price:'',cash:'1.stāvs',note:''};this.entryRequestId=null;this.entrySeq=0;this.entryCatalogueOpen=false;this.entrySearchEnabled=true;this.entrySearchState='idle';this.entryNoMatchAwaitNext=false;this.entryUnitManual=false;this.scanSource='entry';this.detail=null;this.stats=null;this.users=[];this.userStatusFilter='all';this.modal=null;this.suggest=[];this.busy=false;this.scanner=null;this.flash='';
   this.navHistoryReady=false;this.navigationSequence=0;this.lastSavedEntry=null;this.highlightEntryId=null;this.spotlightPending=false;
   this.entryRecentError=false;this.entryRecentLimit=10;
   this.entryRecentEnabled=window.innerWidth>=1180;this.entryDesktopMode=window.matchMedia('(min-width:1180px)').matches;
@@ -36,7 +37,7 @@ class InventoryApp{
   this.entryRecentPulse=new Set();this.entryFeedBusy=false;this.entryPollTimer=null;this.entryFeedYear=null;
   this.inventoryViewSnapshot=null;this.inventorySeenCursor=0;this.inventoryMarkerYear=null;this.inventoryUnreadCount=0;
   this.spotlightTimer=null;
-  this.desktopPairId=null;this.desktopPairBusy=false;this.desktopPairWarningShown=false;this.mobilePairId=null;this.mobilePairBusy=false;this.mobileSendBusy=false;this.remoteScanner=null;this.remoteScannerTimer=null;this.mobileScanMessage='';
+  this.desktopPairId=null;this.desktopPairBusy=false;this.desktopPairWarningShown=false;this.mobilePairId=null;this.mobilePairBusy=false;this.mobileSendBusy=false;this.remoteScanner=null;this.remoteScannerTimer=null;this.mobileScanMessage='';this.mobileScanSucceeded=false;this.lastCompletedMobilePairId=null;
   this.dailyChartObserver=null;this.dailyChartRows=[];this.dailyChartWidth=0;
   window.addEventListener('popstate',e=>this.onBrowserBack(e));
   document.addEventListener('visibilitychange',()=>{if(!document.hidden&&this.section==='entry'&&this.showEntryRecent)this.pollEntryFeed().catch(()=>{});});
@@ -44,6 +45,7 @@ class InventoryApp{
   window.addEventListener('resize',debounce(()=>{const desktop=window.matchMedia('(min-width:1180px)').matches;if(desktop!==this.entryDesktopMode){this.entryDesktopMode=desktop;if(this.section==='entry'){this.readQuickDraft();this.displaySection();if(this.showEntryRecent)this.loadEntryRecent().then(()=>this.pollEntryFeed()).catch(()=>{});}}},120));
   this.pairPollTimer=setInterval(()=>{if(!document.hidden&&this.me){if(this.desktopPairId)this.pollDesktopPair().catch(()=>{});if(this.section==='scanner')this.pollMobilePair().catch(()=>{});}},1800);
   this.debouncedSearch=debounce(()=>this.section==='entry'?this.lookupEntry():this.loadSection(true),380);
+  root.addEventListener('scroll',e=>{if(e.target?.id==='entry-results'&&e.target.scrollHeight-e.target.scrollTop-e.target.clientHeight<140&&this.entryResultsHasMore)this.loadMoreEntryResults().catch(()=>{});},true);
   root.addEventListener('click',e=>this.click(e));root.addEventListener('focusin',e=>{if(this.section==='entry'&&this.entrySearchState==='empty'&&e.target.closest('.entry-form input, .entry-form select'))this.dismissEmptyCatalogue();});root.addEventListener('focusout',e=>this.blur(e));root.addEventListener('submit',e=>{if(e.target.id==='quick-entry-form'){e.preventDefault();this.saveQuickEntry().catch(err=>this.toast(err.message,'error'))}else if(e.target.id==='user-form'){e.preventDefault();this.saveUser().catch(err=>this.toast(err.message,'error'))}});root.addEventListener('change',e=>this.change(e));root.addEventListener('input',e=>this.input(e));root.addEventListener('keydown',e=>{if(e.key==='Escape'&&this.modal)this.closeModal();if((e.key==='Enter'||e.key===' ')&&e.target.matches('tr.group-row[data-action=details]')){e.preventDefault();e.target.click()}});
  }
  get isAdmin(){return this.me?.role==='admin'}
@@ -61,7 +63,7 @@ async boot(){
  }
  login(message='',email=''){
   this.entryFeedHead=null;this.entryFeedCursor=null;this.entryFeedYear=null;this.entryInitialRows=[];this.entrySessionRows.clear();this.inventoryViewSnapshot=null;
-  this.modal=null;this.stopScan();this.stopRemoteScanner();this.desktopPairId=null;this.mobilePairId=null;this.modalStack=[];
+  this.modal=null;this.stopScan();this.stopRemoteScanner();this.desktopPairId=null;this.mobilePairId=null;this.mobileScanSucceeded=false;this.lastCompletedMobilePairId=null;this.mobileScanMessage='';this.modalStack=[];
   root.innerHTML=`<div class="login-screen"><section class="login-form-area"><div class="login-form"><h1>Inventarizācija</h1>${message?`<div role="alert" class="notice error">${esc(message)}</div>`:''}${!this.api.configured?`<div class="notice error">Supabase konfigurācija nav pieejama.</div>`:''}<form id="login-form" class="layout-stack" novalidate><div class="form-field"><label for="login-email">E-pasts</label><input class="field" id="login-email" type="email" autocomplete="username" autocapitalize="none" spellcheck="false" value="${esc(email)}" required></div><div class="form-field"><label for="login-pass">Parole</label><input class="field" id="login-pass" type="password" autocomplete="current-password" required></div><button class="btn primary block" type="submit" ${!this.api.configured?'disabled':''}>Pieslēgties</button></form></div></section></div>`;
   root.querySelector('#login-form')?.addEventListener('submit',e=>{e.preventDefault();this.loginNow()});
   root.querySelector('#login-email')?.focus();
@@ -112,7 +114,7 @@ async boot(){
  async navigateSection(id,{fromHistory=false,searchOverride=null}={}){
   if(!nav.some(([name])=>name===id)||(id==='admin'||id==='stats')&&!this.isAdmin||(id==='scanner'&&!window.matchMedia('(max-width:700px)').matches))return;
   if(this.section==='entry')this.readQuickDraft();
-  if(this.section==='scanner'&&id!=='scanner'){this.stopRemoteScanner();this.mobilePairId=null;}
+  if(this.section==='scanner'&&id!=='scanner'){this.stopRemoteScanner();this.mobilePairId=null;this.mobileScanSucceeded=false;this.lastCompletedMobilePairId=null;this.mobileScanMessage='';}
   if(this.section==='entry'&&id!=='entry'&&this.desktopPairId){const old=this.desktopPairId;this.desktopPairId=null;this.api.remoteScannerCancel(old).catch(()=>{});} 
   if(id!=='inventory'&&this.section==='inventory'){
    this.lastSavedEntry=null;this.highlightEntryId=null;this.spotlightPending=false;
@@ -163,15 +165,22 @@ shell(){
      this.inventoryViewSnapshot=Number(marker.snapshot_feed_id||0);
      this.inventoryMarkerYear=Number(this.year);
     }
-    this.inventory=await this.api.inventoryList({year:Number(this.year),search:this.search,cash:this.cash,sort:this.inventorySort,user:this.inventoryUser,limit:this.invPageSize,offset:this.offset});
+    this.inventory=await this.api.inventoryList({year:Number(this.year),search:this.search,cash:this.cash,sort:this.inventorySort,direction:this.inventoryDirection,user:this.inventoryUser,limit:this.invPageSize,offset:this.offset});
     this.inventoryUnreadCount=Number(await this.api.inventoryUnreadCount(Number(this.year),this.inventoryViewSnapshot));
    }
-   else if(this.section==='catalogue')this.catalogue=await this.api.catalogueSearchSorted(this.search,this.offset,this.catPageSize,this.catalogueSort);
+   else if(this.section==='catalogue')this.catalogue=await this.api.catalogueSearchSorted(this.search,this.offset,this.catPageSize,this.catalogueSort,this.catalogueDirection);
    else if(this.section==='stats'&&this.isAdmin){
     this.stats=await this.api.adminStats(this.year,this.statsCash);
     const y=Number(this.year);this.daily=await this.api.adminDaily(y,`${y}-01-01`,`${y}-12-31`,this.statsCash);
    }
-   else if(this.section==='admin'&&this.isAdmin){this.users=(await this.api.adminUsers()).users||[];const counts=await this.api.adminUserCounts(this.year);this.userCounts=Object.fromEntries(counts.map(r=>[r.user_id,Number(r.entry_count)]));}
+   else if(this.section==='admin'&&this.isAdmin){
+    this.users=(await this.api.adminUsers()).users||[];
+    const counts=await this.api.adminUserCounts(this.year);
+    this.userCounts=Object.fromEntries(counts.map(r=>[r.user_id,Number(r.entry_count)]));
+    this.diagnosticError='';this.diagnostics=null;
+    try{this.diagnostics=await this.api.adminDiagnosticOverview(Number(this.year))}
+    catch(e){this.diagnosticError=e.message||'Neizdevās nolasīt diagnostikas datus';}
+   }
    if(this.section==='inventory'&&this.spotlightPending&&this.lastSavedEntry&&this.lastSavedEntry.year===Number(this.year)){
      const idx=this.inventory.findIndex(r=>this.groupIsHighlighted(r));
      if(idx!==-1){this.expandedRow=-1;this.expandedDetails=[];this.highlightEntryId=this.lastSavedEntry.entryId;this.spotlightPending=false;}
@@ -263,7 +272,8 @@ shell(){
  entryRecentView(){return `<section class="card entry-recent" ${!this.showEntryRecent?'hidden':''} aria-label="Pēdējās inventarizācijas pozīcijas"><div class="entry-recent-head"><h2>Pēdējie preču saraksta ieraksti</h2><label class="entry-recent-limit">Sākotnējie <select id="entry-recent-count" class="field" aria-label="Sākotnējo ierakstu skaits">${options([5,10,20,50],this.entryRecentLimit)}</select></label></div><div id="entry-recent-items">${this.entryRecentBody()}</div></section>`;}
 scannerView(){
   const linked=!!this.mobilePairId;
-  return `<section class="card remote-scanner-page"><div class="remote-scanner-head">${icon('phone',26)}<div><h2>Telefona skeneris</h2><p>${linked?'Savienojums ar datoru ir aktīvs.':'Savienojums ar datoru nav aktivizēts.'}</p></div></div>${linked?`<div class="remote-scanner-video" id="remote-scanner-video"><video id="remote-video" autoplay muted playsinline></video><div class="barcode-target"></div></div><div class="remote-scanner-controls"><button type="button" class="btn secondary" data-action="remote-start-camera">${icon('scan',16)} Ieslēgt kameru</button><div class="form-field"><label for="remote-manual-barcode">Svītrkods (manuāli)</label><div class="field-row"><input class="field" id="remote-manual-barcode" inputmode="text" ${autocompleteOff} maxlength="100" placeholder="Ievadiet svītrkodu"><button type="button" class="btn primary" data-action="remote-send-manual">Nosūtīt</button></div></div></div>`:`<div class="notice info remote-scanner-idle">Lai izmantotu skeneri, datorā pie svītrkoda lauka aktivizējiet savienojuma pogu.</div>`}<p class="remote-scan-status" id="remote-scan-status" role="status">${esc(this.mobileScanMessage)}</p></section>`;
+  const succeeded=this.mobileScanSucceeded&&!linked;
+  return `<section class="card remote-scanner-page"><div class="remote-scanner-head">${icon('phone',26)}<div><h2>Telefona skeneris</h2><p>${succeeded?'Nosūtīšana apstiprināta.':linked?'Savienojums ar datoru ir aktīvs.':'Savienojums ar datoru nav aktivizēts.'}</p></div></div>${succeeded?`<div class="remote-scan-success" role="status" aria-live="polite" aria-label="Svītrkods nosūtīts"><span class="remote-scan-success-circle" aria-hidden="true">${icon('check',62)}</span><strong>Svītrkods nosūtīts</strong><p>Savienojums ar datoru ir pārtraukts.</p></div>`:linked?`<div class="remote-scanner-video" id="remote-scanner-video"><video id="remote-video" autoplay muted playsinline></video><div class="barcode-target"></div></div><div class="remote-scanner-controls"><button type="button" class="btn secondary" data-action="remote-start-camera">${icon('scan',16)} Ieslēgt kameru</button><div class="form-field"><label for="remote-manual-barcode">Svītrkods (manuāli)</label><div class="field-row"><input class="field" id="remote-manual-barcode" inputmode="text" ${autocompleteOff} maxlength="100" placeholder="Ievadiet svītrkodu"><button type="button" class="btn primary" data-action="remote-send-manual">Nosūtīt</button></div></div></div>`:`<div class="notice info remote-scanner-idle">Lai izmantotu skeneri, datorā pie svītrkoda lauka aktivizējiet savienojuma pogu.</div>`}${!succeeded?`<p class="remote-scan-status" id="remote-scan-status" role="status">${esc(this.mobileScanMessage)}</p>`:''}</section>`;
  }
  updateDesktopPairButton(){
   const button=root.querySelector('.remote-desktop-btn');if(!button)return;
@@ -307,14 +317,16 @@ scannerView(){
   finally{this.desktopPairBusy=false;this.updateDesktopPairButton()}
  }
  async pollMobilePair(){
-  if(this.section!=='scanner'||this.mobilePairBusy||!this.me)return;
+  if(this.section!=='scanner'||this.mobilePairBusy||this.mobileSendBusy||!this.me)return;
   this.mobilePairBusy=true;
   try{
    const rows=await this.api.remoteScannerMobileState();
-   if(this.section!=='scanner')return;
+   if(this.section!=='scanner'||this.mobileSendBusy)return;
    const next=rows?.[0]?.request_id||null;
+   if(next&&next===this.lastCompletedMobilePairId)return;
    if(next!==this.mobilePairId){
     this.stopRemoteScanner();this.mobilePairId=next;
+    if(next){this.mobileScanSucceeded=false;this.lastCompletedMobilePairId=null;}
     if(next)this.mobileScanMessage='Noskenējiet svītrkodu. Pēc veiksmīgas nosūtīšanas savienojums tiks pārtraukts.';
     this.displaySection();
     if(next)this.startRemoteScanner().catch(()=>{});
@@ -362,9 +374,11 @@ scannerView(){
    const ok=await this.api.remoteScannerSend(id,code);
    if(this.mobilePairId!==id)return;
    this.mobilePairId=null;
+   this.mobileScanSucceeded=ok===true;
+   this.lastCompletedMobilePairId=ok===true?id:null;
    this.mobileScanMessage=ok?'Svītrkods nosūtīts datoram. Savienojums aizvērts.':'Savienojums ir beidzies. Aktivizējiet to atkārtoti datorā.';
    this.displaySection();
-  }catch(e){this.mobileScanMessage=e.message;this.mobilePairId=null;this.displaySection()}
+  }catch(e){this.mobileScanSucceeded=false;this.mobileScanMessage=e.message;this.mobilePairId=null;this.displaySection()}
   finally{this.mobileSendBusy=false}
  }
  entryView(){
@@ -387,32 +401,52 @@ scannerView(){
     ${this.entryRecentView()}
   </div>`;
  }
- entryHasSufficientQuery(){return ['code','name','barcode'].some(k=>String(this.entryDraft[k]||'').trim().length>=2)}
+ entrySearchFilters(){
+  const code=String(this.entryDraft.code||'').trim(),name=String(this.entryDraft.name||'').trim(),barcode=String(this.entryDraft.barcode||'').trim();
+  return {code:code.length>=2?code:'',name:name.length>=3?name:'',barcode:/^\d{7,}$/.test(barcode)?barcode:''};
+ }
+ entryHasSufficientQuery(){return Object.values(this.entrySearchFilters()).some(Boolean)}
  renderEntryResults(){
   if(this.entrySearchState==='loading')return '<div class="lookup-empty lookup-loading" role="status">Meklējam katalogā…</div>';
   if(this.entrySearchState==='error')return '<div class="lookup-empty">Meklēšana neizdevās. Pārbaudi savienojumu un mēģini vēlreiz.</div>';
   if(this.entrySearchState==='empty')return '<button type="button" class="lookup-empty dismiss-empty-results" data-action="dismiss-empty-catalogue">Katalogā nekas nav atrasts. <span>Pieskarties, lai aizvērtu</span></button>';
-  if(this.entrySearchState!=='results')return '<div class="lookup-empty">Ievadi vismaz divas rakstzīmes vienā meklēšanas laukā.</div>';
-  return (this.entryResults||[]).map((r,i)=>`<button type="button" class="lookup-row compact-lookup" data-action="pick-entry-catalogue" data-i="${i}" title="${eattr(r.name)}"><span class="lookup-code mono">${esc(r.code||'—')}</span><span class="lookup-row-name">${esc(r.name)}</span><span class="lookup-prices mono">${compactMoney(r.invoice_price)} <span class="price-separator">|</span> ${compactMoney(r.shelf_price)}</span><span class="lookup-year mono">${esc(r.source_year??'—')}</span></button>`).join('');
+  if(this.entrySearchState!=='results')return '<div class="lookup-empty">Meklēšana sākas no 2 koda rakstzīmēm, 3 nosaukuma rakstzīmēm vai 7 svītrkoda cipariem.</div>';
+  const rows=(this.entryResults||[]).map((r,i)=>`<button type="button" class="lookup-row compact-lookup" data-action="pick-entry-catalogue" data-i="${i}" title="${eattr(r.name)}"><span class="lookup-code mono">${esc(r.code||'—')}</span><span class="lookup-row-name">${esc(r.name)}</span><span class="lookup-prices mono">${compactMoney(r.invoice_price)} <span class="price-separator">|</span> ${compactMoney(r.shelf_price)}</span><span class="lookup-year mono">${esc(r.source_year??'—')}</span></button>`).join('');
+  return rows+(this.entryResultsHasMore||this.entryResultsLoadingMore?`<button type="button" class="entry-load-more" data-action="entry-load-more" ${this.entryResultsLoadingMore?'disabled':''}>${this.entryResultsLoadingMore?'Ielādējam nākamos…':this.entryResultsMoreError?'Ielāde neizdevās — mēģināt vēlreiz':'Rādīt nākamos rezultātus'}</button>`:'');
  }
  async lookupEntry(){
   const seq=++this.entrySeq;
   if(!this.entrySearchEnabled||!this.entryHasSufficientQuery()||this.section!=='entry'){this.entrySearchState='idle';this.entryCatalogueOpen=false;this.updateEntryResults();return}
-  const params={code:this.entryDraft.code.trim(),name:this.entryDraft.name.trim(),barcode:this.entryDraft.barcode.trim()};
+  const params=this.entrySearchFilters();
+  this.entryResults=[];this.entryResultsHasMore=false;this.entryResultsLoadingMore=false;this.entryResultsMoreError=false;this.entrySearchParams=params;
   this.entrySearchState='loading';this.entryCatalogueOpen=true;this.updateEntryResults();
   try{
-   const results=await this.api.catalogueSearchFields(params);
+   const results=await this.api.catalogueSearchFields(params,0,ENTRY_SEARCH_PAGE_SIZE);
    if(seq!==this.entrySeq||this.section!=='entry'||!this.entrySearchEnabled)return;
-   if(['code','name','barcode'].some(k=>params[k]!==String(this.entryDraft[k]||'').trim()))return;
+   if(['code','name','barcode'].some(k=>params[k]!==this.entrySearchFilters()[k]))return;
    this.entryResults=Array.isArray(results)?results:[];
+   this.entryResultsHasMore=this.entryResults.length===ENTRY_SEARCH_PAGE_SIZE;
    this.entrySearchState=this.entryResults.length?'results':'empty';this.entryNoMatchAwaitNext=!this.entryResults.length;this.updateEntryResults();
+   const scroller=root.querySelector('#entry-results');if(scroller)scroller.scrollTop=0;
   }catch(e){if(seq===this.entrySeq){this.entrySearchState='error';this.entryNoMatchAwaitNext=false;this.updateEntryResults();this.toast(e.message||'Kataloga meklēšana neizdevās','error')}}
  }
+ async loadMoreEntryResults(){
+  if(this.section!=='entry'||!this.entryCatalogueOpen||!this.entrySearchEnabled||this.entrySearchState!=='results'||!this.entryResultsHasMore||this.entryResultsLoadingMore||!this.entrySearchParams)return;
+  const seq=this.entrySeq,params={...this.entrySearchParams},offset=this.entryResults.length;
+  this.entryResultsLoadingMore=true;this.entryResultsMoreError=false;this.updateEntryResults();
+  try{
+   const rows=await this.api.catalogueSearchFields(params,offset,ENTRY_SEARCH_PAGE_SIZE);
+   if(seq!==this.entrySeq||this.section!=='entry'||!this.entryCatalogueOpen||!this.entrySearchEnabled)return;
+   const page=Array.isArray(rows)?rows:[];
+   this.entryResults.push(...page);
+   this.entryResultsHasMore=page.length===ENTRY_SEARCH_PAGE_SIZE;
+  }catch(e){if(seq===this.entrySeq){this.entryResultsMoreError=true;this.toast('Neizdevās ielādēt nākamos kataloga rezultātus','error')}}
+  finally{if(seq===this.entrySeq){this.entryResultsLoadingMore=false;this.updateEntryResults();}}
+ }
  dismissEmptyCatalogue(){if(this.entrySearchState!=='empty')return;this.entryNoMatchAwaitNext=false;this.entryCatalogueOpen=false;this.entrySearchState='idle';this.updateEntryResults();}
- updateEntryResults(){const panel=root.querySelector('#entry-catalogue-panel');if(panel)panel.hidden=!this.entryCatalogueOpen||!this.entrySearchEnabled;const target=root.querySelector('#entry-results');if(target)target.innerHTML=this.renderEntryResults()}
+ updateEntryResults(){const panel=root.querySelector('#entry-catalogue-panel');if(panel)panel.hidden=!this.entryCatalogueOpen||!this.entrySearchEnabled;const target=root.querySelector('#entry-results');if(target){const top=target.scrollTop;target.innerHTML=this.renderEntryResults();target.scrollTop=top}}
  handleEntrySearchChange({clearing=false}={}){
-  this.entrySeq++;this.entryQuery=[this.entryDraft.code,this.entryDraft.name,this.entryDraft.barcode].map(v=>v.trim()).filter(Boolean).join(' ');
-  if(this.entryNoMatchAwaitNext&&!clearing){this.entrySearchEnabled=false;this.entryNoMatchAwaitNext=false;this.entryCatalogueOpen=false;this.entrySearchState='idle';const toggle=root.querySelector('#entry-search-toggle');if(toggle)toggle.checked=false;this.updateEntryResults();return}
+  this.entrySeq++;this.entryResultsHasMore=false;this.entryResultsLoadingMore=false;this.entryResultsMoreError=false;this.entrySearchParams=null;this.entryQuery=[this.entryDraft.code,this.entryDraft.name,this.entryDraft.barcode].map(v=>v.trim()).filter(Boolean).join(' ');
   this.entryNoMatchAwaitNext=false;
   if(!this.entrySearchEnabled||!this.entryHasSufficientQuery()){this.entryCatalogueOpen=false;this.entrySearchState='idle';this.updateEntryResults();return}
   this.entrySearchState='loading';this.entryCatalogueOpen=true;this.updateEntryResults();this.debouncedSearch();
@@ -441,7 +475,7 @@ scannerView(){
   const pz=this.entryDraft.invoice_price,pl=this.entryDraft.shelf_price;
   f.textContent=(['0','0.0','0.00','0,0','0,00'].includes(pz)||['0','0.0','0.00','0,0','0,00'].includes(pl))?'Uzmanību: cena ir 0,00 €.':'';
  }
-inventoryView(){return `<div class="layout-stack"><div class="toolbar"><div class="search-field has-clear-search">${icon('search',18)}<input id="search-input" ${autocompleteOff} placeholder="Kods, nosaukums vai svītrkods" value="${eattr(this.search)}" aria-label="Meklēt ievadītās preces pēc koda, nosaukuma vai svītrkoda"><button type="button" class="clear-search-field" data-action="clear-search" aria-label="Notīrīt meklēšanu" title="Notīrīt">${icon('close',14)}</button></div><select class="field" id="cash-select" aria-label="Kase">${options(cashFilter,this.cash)}</select><select class="field" id="inventory-sort" aria-label="Kārtojums">${options([{value:'recent',label:'Pēdējie pievienotie'},{value:'alpha',label:'Pēc alfabēta'}],this.inventorySort)}</select>${this.isAdmin?`<select class="field" id="inventory-user" aria-label="Ieraksta autors">${options([{value:'',label:'Visi lietotāji'},...this.users.map(u=>({value:u.id,label:u.display_name||u.email_address}))],this.inventoryUser)}</select>`:''}<label class="page-size">Rindas lapā <select class="field" id="inventory-page-size">${options([25,50,100],this.invPageSize)}</select></label></div><div class="inventory-unread-toolbar"><span class="inventory-unread-explain">Gaiši zaļā krāsā — kopš pēdējās atzīmes pievienotie ieraksti.</span><button type="button" class="btn small secondary" data-action="mark-inventory-seen" ${this.inventoryUnreadCount<=0?'disabled':''}>Atzīmēt visus ierakstus kā apskatītus</button></div>${this.inventoryTable()}</div>`}
+inventoryView(){return `<div class="layout-stack"><div class="toolbar"><div class="search-field has-clear-search">${icon('search',18)}<input id="search-input" ${autocompleteOff} placeholder="Kods, nosaukums vai svītrkods" value="${eattr(this.search)}" aria-label="Meklēt ievadītās preces pēc koda, nosaukuma vai svītrkoda"><button type="button" class="clear-entry-field clear-search-field" data-action="clear-search" aria-label="Notīrīt meklēšanu" title="Notīrīt">${icon('close',14)}</button></div><select class="field" id="cash-select" aria-label="Kase">${options(cashFilter,this.cash)}</select><select class="field" id="inventory-sort" aria-label="Kārtot preču sarakstu pēc">${options([{value:'recent',label:'Pievienošanas laiks'},{value:'alpha',label:'Nosaukums'},{value:'code',label:'Preces kods'},{value:'barcode',label:'Svītrkods'},{value:'quantity',label:'Daudzums'},{value:'unit',label:'Mērvienība'},{value:'invoice_price',label:'Pavadzīmes cena'},{value:'shelf_price',label:'Plaukta cena'},{value:'invoice_total',label:'Pavadzīmes summa'},{value:'shelf_total',label:'Plaukta summa'},{value:'entry_count',label:'Ievažu skaits'},{value:'cash',label:'Kase'}],this.inventorySort)}</select><select class="field sort-direction" id="inventory-direction" aria-label="Preču saraksta secība">${options([{value:'asc',label:'↑ Augoši'},{value:'desc',label:'↓ Dilstoši'}],this.inventoryDirection)}</select>${this.isAdmin?`<select class="field" id="inventory-user" aria-label="Ieraksta autors">${options([{value:'',label:'Visi lietotāji'},...this.users.map(u=>({value:u.id,label:u.display_name||u.email_address}))],this.inventoryUser)}</select>`:''}<label class="page-size">Rindas lapā <select class="field" id="inventory-page-size">${options([25,50,100],this.invPageSize)}</select></label></div><div class="inventory-unread-toolbar"><span class="inventory-unread-explain">Gaiši zaļā krāsā — kopš pēdējās atzīmes pievienotie ieraksti.</span><button type="button" class="btn small secondary" data-action="mark-inventory-seen" ${this.inventoryUnreadCount<=0?'disabled':''}>Atzīmēt visus ierakstus kā apskatītus</button></div>${this.inventoryTable()}</div>`}
  groupIsHighlighted(g){const h=this.lastSavedEntry;return !!(h&&h.year===Number(this.year)&&String(g.code||'')===String(h.code||'')&&g.name===h.name&&dec2(g.invoice_price)===dec2(h.invoice_price)&&dec2(g.shelf_price)===dec2(h.shelf_price)&&g.cash===h.cash&&g.unit===h.unit)}
  groupIsUnread(g){return typeof g.has_unread==='boolean'?g.has_unread:Number(g.last_feed_id||0)>Number(this.inventorySeenCursor||0);}
  pulseInventorySpotlight(){
@@ -464,7 +498,7 @@ inventoryView(){return `<div class="layout-stack"><div class="toolbar"><div clas
   const rows=arr.map((r,i)=>`<tr class="group-row ${this.expandedRow===i?'expanded':''} ${unreadTones[i]}" data-action="details" data-i="${i}" role="button" tabindex="0" aria-expanded="${this.expandedRow===i}"><td class="expand-cell"><span class="expand-icon">${icon('chevron',15)}</span></td><td class="code mono">${esc(r.code||'—')}</td><td class="name-cell" title="${eattr(r.name)}">${esc(r.name)}</td><td class="code mono barcode-cell" title="${eattr(r.barcode||'')}">${esc(r.barcode||'—')}</td><td class="right mono">${formatQty(r.quantity)}</td><td>${esc(unitLabel(r.unit))}</td><td class="right mono">${money(r.invoice_price)}</td><td class="right mono">${money(r.shelf_price)}</td><td class="right mono">${money(r.invoice_total)}</td><td class="right mono">${money(r.shelf_total)}</td><td class="cash-cell">${esc(cashLabel(r.cash))}</td></tr>${this.expandedRow===i?`<tr class="details-row"><td colspan="11">${this.detailsMarkup()}</td></tr>`:''}`).join('');
   return `<section class="card"><div class="panel-title"><h2>Ievadītās preces</h2><span class="tag">${this.year}. gads</span></div>${arr.length?`<div class="table-wrap"><table class="data-table inventory-table"><colgroup><col style="width:30px"><col style="width:108px"><col><col style="width:140px"><col style="width:88px"><col style="width:72px"><col style="width:96px"><col style="width:96px"><col style="width:108px"><col style="width:108px"><col style="width:112px"></colgroup><thead><tr><th aria-label="Izvērst"></th><th>ID / kods</th><th>Nosaukums</th><th>Svītrkods</th><th class="right">Daudzums</th><th>Vien.</th><th class="right">PZ cena</th><th class="right">PL cena</th><th class="right">PZ summa</th><th class="right">PL summa</th><th>Kase</th></tr></thead><tbody>${rows}</tbody></table></div><div class="mobile-rows"><div class="mobile-list">${arr.map((r,i)=>`<div><button class="mobile-card compact-mobile-row ${unreadTones[i]}" data-action="details" data-i="${i}" aria-expanded="${this.expandedRow===i}"><span class="compact-code mono">${esc(r.code||'—')}</span><span class="compact-name" title="${eattr(r.name)}">${esc(r.name)}</span><span class="compact-barcode mono" title="${eattr(r.barcode||'')}">${esc(r.barcode||'—')}</span><span class="compact-qty mono">${formatQty(r.quantity)} ${esc(unitLabel(r.unit))}</span><span class="compact-money mono">${money(r.invoice_price)} / ${money(r.shelf_price)}</span><span class="compact-chevron">${icon('chevron',13)}</span></button>${this.expandedRow===i?this.detailsMarkup():''}</div>`).join('')}</div></div>`:`<div class="empty-state"><strong>Šajā atlasē nav ierakstu.</strong></div>`}<div class="table-footer"><span>${arr.length?this.offset+1:0}–${this.offset+arr.length} (rādītas ${arr.length})</span><div class="field-row"><button class="btn secondary small" data-action="page-prev" ${this.offset===0?'disabled':''}>Iepriekšējā</button><button class="btn secondary small" data-action="page-next" ${arr.length<this.invPageSize?'disabled':''}>Nākamā ${icon('chevron',15)}</button></div></div></section>`;
  }
- catalogueView(){const arr=Array.isArray(this.catalogue)?this.catalogue:[];return `<div class="layout-stack"><div class="toolbar"><div class="search-field has-clear-search">${icon('search',18)}<input id="search-input" ${autocompleteOff} value="${eattr(this.search)}" placeholder="Kods un/vai nosaukums, svītrkods" aria-label="Meklēt preču katalogā"><button type="button" class="clear-search-field" data-action="clear-search" aria-label="Notīrīt meklēšanu" title="Notīrīt">${icon('close',14)}</button></div><select class="field" id="catalogue-sort" aria-label="Kataloga kārtojums">${options([{value:'alpha',label:'Pēc alfabēta'},{value:'recent',label:'Pēdējie pievienotie'}],this.catalogueSort)}</select><label class="page-size">Rindas lapā <select class="field" id="catalogue-page-size">${options([25,50,100],this.catPageSize)}</select></label>${this.isAdmin?`<button class="btn secondary" data-action="xlsx-import">${icon('upload',17)} Pievienot kataloga preces no faila</button><button class="btn primary" data-action="new-cat">${icon('plus')} Jauna prece</button>`:''}</div><div class="card"><div class="panel-title"><h2>Preču katalogs</h2></div>${arr.length?`<div class="table-wrap"><table class="data-table catalogue-table"><colgroup><col style="width:128px"><col><col style="width:95px"><col style="width:95px"><col style="width:178px"><col style="width:115px"><col style="width:69px"><col style="width:80px"></colgroup><thead><tr><th>Kods</th><th>Nosaukums</th><th class="right">PZ cena</th><th class="right">PL cena</th><th>Svītrkods</th><th>Mērvienība</th><th>Gads</th><th></th></tr></thead><tbody>${arr.map((r,i)=>`<tr><td class="code mono">${esc(r.code||'—')}</td><td class="name-cell">${esc(r.name)}</td><td class="right mono">${money(r.invoice_price)}</td><td class="right mono">${r.shelf_price==null?'-':money(r.shelf_price)}</td><td class="mono">${esc(r.barcode||'—')}</td><td>${esc(unitLabel(r.unit)||'—')}</td><td>${esc(r.source_year||'—')}</td><td><button class="row-action" data-action="${this.isAdmin?'edit-cat':'see-cat'}" data-i="${i}">${this.isAdmin?'Labot':'Skatīt'}</button></td></tr>`).join('')}</tbody></table></div><div class="mobile-rows"><div class="mobile-list">${arr.map((r,i)=>`<button class="mobile-card compact-mobile-row catalogue-mobile-row" data-action="${this.isAdmin?'edit-cat':'see-cat'}" data-i="${i}"><span class="compact-code mono">${esc(r.code||'—')}</span><span class="compact-name" title="${eattr(r.name)}">${esc(r.name)}</span><span class="compact-money mono">${compactMoney(r.invoice_price)} | ${compactMoney(r.shelf_price)}</span><span class="compact-year mono">${esc(r.source_year??'—')}</span><span class="compact-chevron">${icon('chevron',13)}</span></button>`).join('')}</div></div>`:`<div class="empty-state"><strong>Nav atrastu preču</strong><span>Mēģiniet citu nosaukumu vai kodu.</span></div>`}<div class="table-footer"><span>${arr.length?this.offset+1:0}–${this.offset+arr.length} (rādītas ${arr.length})</span><div class="field-row"><button class="btn secondary small" data-action="page-prev" ${this.offset===0?'disabled':''}>Iepriekšējā</button><button class="btn secondary small" data-action="page-next" ${arr.length<this.catPageSize?'disabled':''}>Nākamā ${icon('chevron',15)}</button></div></div></div></div>`;}
+ catalogueView(){const arr=Array.isArray(this.catalogue)?this.catalogue:[];return `<div class="layout-stack"><div class="toolbar"><div class="search-field has-clear-search">${icon('search',18)}<input id="search-input" ${autocompleteOff} value="${eattr(this.search)}" placeholder="Kods un/vai nosaukums, svītrkods" aria-label="Meklēt preču katalogā"><button type="button" class="clear-entry-field clear-search-field" data-action="clear-search" aria-label="Notīrīt meklēšanu" title="Notīrīt">${icon('close',14)}</button></div><select class="field" id="catalogue-sort" aria-label="Kārtot katalogu pēc">${options([{value:'alpha',label:'Nosaukums'},{value:'recent',label:'Pievienošanas laiks'},{value:'code',label:'Preces kods'},{value:'barcode',label:'Svītrkods'},{value:'invoice_price',label:'Pavadzīmes cena'},{value:'shelf_price',label:'Plaukta cena'},{value:'unit',label:'Mērvienība'},{value:'source_year',label:'Avota gads'}],this.catalogueSort)}</select><select class="field sort-direction" id="catalogue-direction" aria-label="Kataloga secība">${options([{value:'asc',label:'↑ Augoši'},{value:'desc',label:'↓ Dilstoši'}],this.catalogueDirection)}</select><label class="page-size">Rindas lapā <select class="field" id="catalogue-page-size">${options([25,50,100],this.catPageSize)}</select></label>${this.isAdmin?`<button class="btn secondary" data-action="xlsx-import">${icon('upload',17)} Pievienot kataloga preces no faila</button><button class="btn primary" data-action="new-cat">${icon('plus')} Jauna prece</button>`:''}</div><div class="card"><div class="panel-title"><h2>Preču katalogs</h2></div>${arr.length?`<div class="table-wrap"><table class="data-table catalogue-table"><colgroup><col style="width:128px"><col><col style="width:95px"><col style="width:95px"><col style="width:178px"><col style="width:115px"><col style="width:69px"><col style="width:80px"></colgroup><thead><tr><th>Kods</th><th>Nosaukums</th><th class="right">PZ cena</th><th class="right">PL cena</th><th>Svītrkods</th><th>Mērvienība</th><th>Gads</th><th></th></tr></thead><tbody>${arr.map((r,i)=>`<tr><td class="code mono">${esc(r.code||'—')}</td><td class="name-cell">${esc(r.name)}</td><td class="right mono">${money(r.invoice_price)}</td><td class="right mono">${r.shelf_price==null?'-':money(r.shelf_price)}</td><td class="mono">${esc(r.barcode||'—')}</td><td>${esc(unitLabel(r.unit)||'—')}</td><td>${esc(r.source_year||'—')}</td><td><button class="row-action" data-action="${this.isAdmin?'edit-cat':'see-cat'}" data-i="${i}">${this.isAdmin?'Labot':'Skatīt'}</button></td></tr>`).join('')}</tbody></table></div><div class="mobile-rows"><div class="mobile-list">${arr.map((r,i)=>`<button class="mobile-card compact-mobile-row catalogue-mobile-row" data-action="${this.isAdmin?'edit-cat':'see-cat'}" data-i="${i}"><span class="compact-code mono">${esc(r.code||'—')}</span><span class="compact-name" title="${eattr(r.name)}">${esc(r.name)}</span><span class="compact-money mono">${compactMoney(r.invoice_price)} | ${compactMoney(r.shelf_price)}</span><span class="compact-year mono">${esc(r.source_year??'—')}</span><span class="compact-chevron">${icon('chevron',13)}</span></button>`).join('')}</div></div>`:`<div class="empty-state"><strong>Nav atrastu preču</strong><span>Mēģiniet citu nosaukumu vai kodu.</span></div>`}<div class="table-footer"><span>${arr.length?this.offset+1:0}–${this.offset+arr.length} (rādītas ${arr.length})</span><div class="field-row"><button class="btn secondary small" data-action="page-prev" ${this.offset===0?'disabled':''}>Iepriekšējā</button><button class="btn secondary small" data-action="page-next" ${arr.length<this.catPageSize?'disabled':''}>Nākamā ${icon('chevron',15)}</button></div></div></div></div>`;}
  dailyLineMarkup(rows){
   if(!rows.length)return '<p class="lookup-empty">Šim gadam nav datu.</p>';
   this.dailyChartRows=rows;
@@ -534,9 +568,20 @@ inventoryView(){return `<div class="layout-stack"><div class="toolbar"><div clas
   const mobile=root.querySelector('#users-mobile-list');if(mobile)mobile.innerHTML=this.userMobileCards();
   const count=root.querySelector('#users-count');if(count)count.textContent=`Rādīti ${this.filteredUsers().length} no ${this.users.length} lietotājiem`;
  }
+ diagnosticsView(){
+  if(this.diagnosticError)return `<section class="card panel"><div class="panel-title"><h2>Datu diagnostika</h2></div><div class="notice error">${esc(this.diagnosticError)}</div></section>`;
+  const data=this.diagnostics;if(!data)return '';
+  const inv=data.inventory||{},cat=data.catalogue||{};
+  const metric=(label,value)=>`<div class="diagnostic-metric"><span>${esc(label)}</span><strong class="mono">${esc(value??'—')}</strong></div>`;
+  const inventoryMetrics=[['Aktīvie ieraksti',inv.entries],['Unikālās pozīcijas',inv.positions],['Ar preces kodu',inv.with_code],['Ar svītrkodu',inv.with_barcode],['Ar plaukta cenu',inv.with_shelf_price],['Ar mērvienību',inv.with_unit],['Bez koda un svītrkoda',inv.without_both],['Anulēti',inv.voided]];
+  const catalogueMetrics=[['Aktīvās preces',cat.items],['Ar preces kodu',cat.with_code],['Ar svītrkodu',cat.with_barcode],['Ar plaukta cenu',cat.with_shelf_price],['Ar mērvienību',cat.with_unit],['Bez koda un svītrkoda',cat.without_both],['Pavadzīmes cena 0 €',cat.zero_invoice]];
+  const block=(title,subtitle,rows)=>`<section class="card panel diagnostic-card"><div class="panel-title"><h2>${esc(title)}</h2></div><p class="tip diagnostic-sub">${esc(subtitle)}</p><div class="diagnostic-metrics">${rows.map(r=>metric(...r)).join('')}</div></section>`;
+  const findings=Array.isArray(data.findings)?data.findings:[];
+  return `<section class="admin-diagnostics" aria-label="Datu diagnostika"><div class="diagnostic-pair">${block('Inventarizācijas ieraksti',`${data.year}. gads · tikai aktuālās, spēkā esošās ievades`,inventoryMetrics)}${block('Katalogs',`${data.catalogue_year}. gads · aktuālās, redzamās preču versijas`,catalogueMetrics)}</div><section class="card panel diagnostic-card"><div class="panel-title"><h2>Iespējamās datu anomālijas</h2><span class="tag">${esc(data.finding_count??0)} atradumi</span></div><p class="tip diagnostic-sub">Anomālijas tiek meklētas tikai inventarizācijas ierakstos. Tās ir pārbaudes indikatori, nevis apstiprinātas kļūdas. Nekas netiek labots automātiski; parādīti ne vairāk kā 40 atradumi.</p>${findings.length?`<div class="diagnostic-issues">${findings.map(f=>`<div class="diagnostic-issue"><div class="diagnostic-issue-text"><span class="diagnostic-scope">Inventarizācija</span><strong>${esc(f.issue||'Iespējama neatbilstība')}</strong><span title="${eattr(f.name||'')}">${esc([f.code,f.name].filter(Boolean).join(' · ')||'Bez identificējoša lauka')}</span><small>${esc(f.advice||'Pārbaudīt ierakstu')} · ${esc(f.matches??1)} ${Number(f.matches)===1?'gadījums':'gadījumi'}</small></div><button class="btn secondary small" type="button" data-action="diagnostic-open" data-scope="inventory" data-search="${eattr(f.code||f.name||'')}">Pārskatīt</button></div>`).join('')}</div>`:'<div class="notice info">Pēc izvēlētajiem noteikumiem iespējamas datu anomālijas nav konstatētas.</div>'}</section></section>`;
+ }
  adminView(){
   if(!this.isAdmin)return '<div class="notice error">Tikai administratoram.</div>';
-  return `<div class="layout-stack"><section class="card panel admin-year-panel"><div class="panel-title"><h2>Inventarizācijas gads</h2></div><div class="key-value"><span>Aktīvais gads</span><strong>${this.config.active_year}</strong></div><div class="key-value"><span>Statuss</span><strong>${this.config.year_closed?'Noslēgts':'Atvērts'}</strong></div><div class="form-field admin-view-year"><label for="view-year-select">Skata gads (tikai administratoram)</label><select class="field" id="view-year-select">${options([...new Set([this.config.active_year,...years])],this.year)}</select><small class="tip">Attiecas tikai uz Preču sarakstu un Statistiku. Datu ievade un Katalogs vienmēr strādā aktīvajā gadā.</small></div><div class="admin-buttons">${!this.config.year_closed?`<button class="btn danger" data-action="close-year">Noslēgt šī gada inventarizāciju</button>`:''}<button class="btn secondary" data-action="new-year-wizard">Konfigurēt jaunu inventarizāciju</button></div></section><section class="card panel"><div class="panel-title"><h2>Lietotāju administrēšana</h2><button class="btn primary" data-action="new-user">${icon('plus')} Pievienot lietotāju</button></div><div class="user-toolbar"><div class="form-field"><label for="user-status-filter">Kontu statuss</label><select class="field" id="user-status-filter">${options([{value:'all',label:'Visi'},{value:'active',label:'Aktīvie'},{value:'inactive',label:'Deaktivizētie'}],this.userStatusFilter)}</select></div><div class="users-count" id="users-count">Rādīti ${this.filteredUsers().length} no ${this.users.length} lietotājiem</div></div><div class="table-wrap users-desktop-table"><table class="data-table"><thead><tr><th>Lietotājs</th><th>E-pasts</th><th>Loma</th><th>Statuss</th><th>Ieraksti (${this.year})</th><th>Darbības</th></tr></thead><tbody id="users-table-body">${this.userTableRows()}</tbody></table></div><div class="mobile-rows users-mobile" id="users-mobile-list">${this.userMobileCards()}</div><p class="tip">Deaktivizēšana bloķē piekļuvi aplikācijas datiem, bet saglabā visas lietotāja darbības un inventarizācijas vēsturi. Kontu vēlāk var aktivizēt. Izmaiņas tiek auditētas.</p></section><footer class="app-version" aria-label="Aplikācijas versija">Versija <span class="mono">v${esc(APP_VERSION)}</span> · Testa vide</footer></div>`;
+  return `<div class="layout-stack"><section class="card panel admin-year-panel"><div class="panel-title"><h2>Inventarizācijas gads</h2></div><div class="key-value"><span>Aktīvais gads</span><strong>${this.config.active_year}</strong></div><div class="key-value"><span>Statuss</span><strong>${this.config.year_closed?'Noslēgts':'Atvērts'}</strong></div><div class="form-field admin-view-year"><label for="view-year-select">Skata gads (tikai administratoram)</label><select class="field" id="view-year-select">${options([...new Set([this.config.active_year,...years])],this.year)}</select><small class="tip">Attiecas tikai uz Preču sarakstu un Statistiku. Datu ievade un Katalogs vienmēr strādā aktīvajā gadā.</small></div><div class="admin-buttons">${!this.config.year_closed?`<button class="btn danger" data-action="close-year">Noslēgt šī gada inventarizāciju</button>`:''}<button class="btn secondary" data-action="new-year-wizard">Konfigurēt jaunu inventarizāciju</button></div></section><section class="card panel"><div class="panel-title"><h2>Lietotāju administrēšana</h2><button class="btn primary" data-action="new-user">${icon('plus')} Pievienot lietotāju</button></div><div class="user-toolbar"><div class="form-field"><label for="user-status-filter">Kontu statuss</label><select class="field" id="user-status-filter">${options([{value:'all',label:'Visi'},{value:'active',label:'Aktīvie'},{value:'inactive',label:'Deaktivizētie'}],this.userStatusFilter)}</select></div><div class="users-count" id="users-count">Rādīti ${this.filteredUsers().length} no ${this.users.length} lietotājiem</div></div><div class="table-wrap users-desktop-table"><table class="data-table"><thead><tr><th>Lietotājs</th><th>E-pasts</th><th>Loma</th><th>Statuss</th><th>Ieraksti (${this.year})</th><th>Darbības</th></tr></thead><tbody id="users-table-body">${this.userTableRows()}</tbody></table></div><div class="mobile-rows users-mobile" id="users-mobile-list">${this.userMobileCards()}</div><p class="tip">Deaktivizēšana bloķē piekļuvi aplikācijas datiem, bet saglabā visas lietotāja darbības un inventarizācijas vēsturi. Kontu vēlāk var aktivizēt. Izmaiņas tiek auditētas.</p></section>${this.diagnosticsView()}<footer class="app-version" aria-label="Aplikācijas versija">Versija <span class="mono">v${esc(APP_VERSION)}</span> · Testa vide</footer></div>`;
  }
 
   renderModal(){const h=root.querySelector('#overlay-host');if(!h)return;if(!this.modal){h.innerHTML='';return}const m=this.modal;
@@ -595,6 +640,11 @@ inventoryView(){return `<div class="layout-stack"><div class="toolbar"><div clas
    if(action==='nav'){if(this.busy)return;await this.navigateSection(btn.dataset.id)}
    else if(action==='logout'){const pair=this.desktopPairId;this.desktopPairId=null;if(pair)await this.api.remoteScannerCancel(pair).catch(()=>{});this.stopRemoteScanner();await this.api.logout();this.me=null;this.login()}
    else if(action==='clear-search'){this.search='';this.offset=0;this.expandedRow=-1;this.expandedDetails=[];await this.loadSection();}
+   else if(action==='diagnostic-open'){
+    const target='inventory';
+    this.offset=0;this.inventoryUser='';this.cash='';
+    await this.navigateSection(target,{searchOverride:btn.dataset.search||''});
+   }
    else if(action==='refresh'){await this.loadSection();this.toast('Dati atjaunoti')}
    else if(action==='new-entry'){await this.navigateSection('entry')}
    else if(action==='toggle-remote-scanner'){await this.toggleDesktopPair()}
@@ -641,6 +691,7 @@ inventoryView(){return `<div class="layout-stack"><div class="toolbar"><div clas
    else if(action==='dismiss-empty-catalogue'){this.dismissEmptyCatalogue()}
    else if(action==='dismiss-entry-catalogue'){this.entrySearchEnabled=false;this.entryCatalogueOpen=false;this.entrySeq++;this.entrySearchState='idle';this.updateEntryResults()}
    else if(action==='open-entry-catalogue'){this.entrySearchEnabled=true;this.entryNoMatchAwaitNext=false;this.handleEntrySearchChange({clearing:true});root.querySelector('#e-code')?.focus()}
+   else if(action==='entry-load-more'){await this.loadMoreEntryResults()}
    else if(action==='pick-entry-catalogue'){const item=this.entryResults[Number(btn.dataset.i)];if(item)this.pickEntryProduct(item)}
    else if(action==='pick-scan-variant'){const item=this.modal?.items?.[Number(btn.dataset.i)];if(item){this.closeModal();this.pickEntryProduct(item)}}
    else if(action==='qty-plus'||action==='qty-minus'){this.readQuickDraft();const original=dec2(this.entryDraft.quantity||'0');const next=original+(action==='qty-plus'?100n:-100n);this.fillQuickDraft({quantity:fromDec2(next<0n?0n:next)})}
@@ -690,8 +741,10 @@ change(e){
   }
   if(e.target.id==='entry-search-toggle'){this.readQuickDraft();this.entrySearchEnabled=e.target.checked;this.entrySeq++;this.entryNoMatchAwaitNext=false;if(this.entrySearchEnabled)this.handleEntrySearchChange({clearing:true});else{this.entryCatalogueOpen=false;this.entrySearchState='idle';this.updateEntryResults()}return}
   if(e.target.id==='e-unit'){this.entryUnitManual=true;this.readQuickDraft();this.entryRequestId=null;return}
-  if(e.target.id==='inventory-sort'){this.inventorySort=e.target.value;this.offset=0;this.expandedRow=-1;this.loadSection();return}
+  if(e.target.id==='inventory-sort'){this.inventorySort=e.target.value;this.offset=0;this.expandedRow=-1;this.expandedDetails=[];this.loadSection();return}
+  if(e.target.id==='inventory-direction'){this.inventoryDirection=e.target.value;this.offset=0;this.expandedRow=-1;this.expandedDetails=[];this.loadSection();return}
   if(e.target.id==='catalogue-sort'){this.catalogueSort=e.target.value;this.offset=0;this.loadSection();return}
+  if(e.target.id==='catalogue-direction'){this.catalogueDirection=e.target.value;this.offset=0;this.loadSection();return}
   if(e.target.id==='inventory-user'){this.inventoryUser=e.target.value;this.offset=0;this.expandedRow=-1;this.loadSection();return}
   if(e.target.id==='cash-select'){this.cash=e.target.value;this.offset=0;this.expandedRow=-1;this.loadSection();return}
   if(e.target.id==='stats-cash'){this.statsCash=e.target.value;this.loadSection();return}
